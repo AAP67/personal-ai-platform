@@ -1,0 +1,14 @@
+{
+  "name": "Personal AI Platform",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:20",
+  "postStartCommand": "curl -fsSL https://claude.ai/install.sh | bash && export PATH=\"$HOME/.local/bin:$PATH\"",
+  "forwardPorts": [3000, 5173],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}
