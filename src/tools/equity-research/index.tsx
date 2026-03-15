@@ -11,11 +11,12 @@ export default function EquityResearch() {
         </div>
       )}
       <iframe
-        src="https://equity-research-ai-francium77.streamlit.app/"
+        src="https://equity-research-ai-francium77.streamlit.app/?embed=true"
         title="Markets Tool"
         onLoad={() => setLoaded(true)}
         className="w-full h-full border-0"
-        allow="clipboard-write"
+        allow="clipboard-read; clipboard-write"
+        sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
       />
     </div>
   )

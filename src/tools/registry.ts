@@ -32,7 +32,7 @@ export const toolRegistry: ToolConfig[] = [
     icon: '🌐',
     route: 'equity-research',
     enabled: true,
-    url: 'https://equity-research-ai-francium77.streamlit.app/',
+    url: 'https://equity-research-ai-francium77.streamlit.app/?embed=true',
   },
   {
     id: 'arkanex',
@@ -41,7 +41,7 @@ export const toolRegistry: ToolConfig[] = [
     icon: '💼',
     route: 'arkanex',
     enabled: true,
-    url: 'https://arkanex-ai-interviewer.streamlit.app/',
+    url: 'https://arkanex-ai-interviewer.streamlit.app/?embed=true',
   },
 ]
 

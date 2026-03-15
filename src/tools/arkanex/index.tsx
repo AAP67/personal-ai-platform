@@ -11,11 +11,12 @@ export default function Arkanex() {
         </div>
       )}
       <iframe
-        src="https://arkanex-ai-interviewer.streamlit.app/"
+        src="https://arkanex-ai-interviewer.streamlit.app/?embed=true"
         title="Career Tool"
         onLoad={() => setLoaded(true)}
         className="w-full h-full border-0"
-        allow="clipboard-write"
+        allow="clipboard-read; clipboard-write"
+        sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
       />
     </div>
   )
