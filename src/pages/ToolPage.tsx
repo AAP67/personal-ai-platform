@@ -1,6 +1,7 @@
 import { useParams, Link, Navigate } from 'react-router-dom'
-import { lazy, Suspense, ReactNode, LazyExoticComponent } from 'react'
+import { lazy, Suspense, ReactNode, LazyExoticComponent, useEffect, useRef } from 'react'
 import { getToolById, ToolConfig } from '../tools/registry'
+import { useLogInteraction } from '../hooks/useLogInteraction'
 
 /**
  * Add a lazy import here whenever you add a new tool folder.
@@ -43,6 +44,21 @@ function IframeShell({ tool, children }: { tool: ToolConfig; children: ReactNode
 export default function ToolPage() {
   const { toolId } = useParams<{ toolId: string }>()
   const tool = toolId ? getToolById(toolId) : undefined
+
+  // Hooks must be called unconditionally — guard inside the effect
+  const logInteraction = useLogInteraction(tool?.route ?? '', tool?.name ?? '')
+  const logRef = useRef(logInteraction)
+  logRef.current = logInteraction
+
+  useEffect(() => {
+    if (!tool) return
+    const startTime = Date.now()
+    logRef.current('tool_open')
+    return () => {
+      const duration = Math.round((Date.now() - startTime) / 1000)
+      logRef.current('tool_close', duration)
+    }
+  }, [tool?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!tool || !tool.enabled) {
     return <Navigate to="/dashboard" replace />

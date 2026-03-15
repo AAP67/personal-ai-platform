@@ -1,6 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { enabledTools, ToolConfig } from '../tools/registry'
 import { useAuth } from '../contexts/AuthContext'
+import { useLogInteraction } from '../hooks/useLogInteraction'
 
 function ToolCard({ tool }: { tool: ToolConfig }) {
   return (
@@ -26,6 +28,11 @@ export default function Dashboard() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
   const tools = enabledTools()
+  const logInteraction = useLogInteraction('dashboard', 'Dashboard')
+
+  useEffect(() => {
+    logInteraction('session_start')
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSignOut() {
     await signOut()
@@ -43,6 +50,12 @@ export default function Dashboard() {
           {user ? (
             <>
               <span className="text-sm text-zinc-500">{user.email}</span>
+              <Link
+                to="/profile"
+                className="text-sm text-zinc-400 hover:text-white transition-colors"
+              >
+                Profile
+              </Link>
               <button
                 onClick={handleSignOut}
                 className="text-sm text-zinc-400 hover:text-white transition-colors"

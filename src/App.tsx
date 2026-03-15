@@ -5,6 +5,7 @@ import Landing from './pages/Landing'
 import Auth from './pages/Auth'
 import Dashboard from './pages/Dashboard'
 import ToolPage from './pages/ToolPage'
+import Profile from './pages/Profile'
 
 export default function App() {
   return (
@@ -20,6 +21,10 @@ export default function App() {
           <Route
             path="/tools/:toolId"
             element={<RequireAuth><ToolPage /></RequireAuth>}
+          />
+          <Route
+            path="/profile"
+            element={<RequireAuth><Profile /></RequireAuth>}
           />
         </Routes>
       </BrowserRouter>
