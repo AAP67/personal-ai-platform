@@ -326,7 +326,6 @@ export default function Landing() {
               'Borderless Capital',
               'KAUST Investment Management Company',
               'Handshake AI',
-              'CFA L3 Candidate',
             ].map((chip) => (
               <span
                 key={chip}
@@ -356,7 +355,7 @@ export default function Landing() {
             </a>
             <div className="w-px h-4 bg-zinc-800" />
             <a
-              href="https://linkedin.com/in/karanrajpal"
+              href="https://www.linkedin.com/in/krajpal/"
               target="_blank"
               rel="noopener noreferrer"
               className="group flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors duration-200"
@@ -401,7 +400,7 @@ export default function Landing() {
               <GitHubIcon className="w-4 h-4" />
             </a>
             <a
-              href="https://linkedin.com/in/karanrajpal"
+              href="https://www.linkedin.com/in/krajpal/"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-zinc-300 transition-colors"
