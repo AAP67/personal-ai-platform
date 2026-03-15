@@ -5,6 +5,7 @@ export interface ToolConfig {
   icon: string        // emoji or icon name — swap for a component library later
   route: string       // relative path under /tools/
   enabled: boolean
+  url?: string        // if set, the tool renders as a full-height iframe
 }
 
 /**
@@ -22,6 +23,7 @@ export const toolRegistry: ToolConfig[] = [
     icon: '📈',
     route: 'robo-advisor',
     enabled: true,
+    url: 'https://robo-advisor-ai-umber.vercel.app/',
   },
 ]
 

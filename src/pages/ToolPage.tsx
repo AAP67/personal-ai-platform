@@ -1,16 +1,16 @@
 import { useParams, Link, Navigate } from 'react-router-dom'
-import { lazy, Suspense, ReactNode } from 'react'
-import { getToolById } from '../tools/registry'
+import { lazy, Suspense, ReactNode, LazyExoticComponent } from 'react'
+import { getToolById, ToolConfig } from '../tools/registry'
 
 /**
  * Add a lazy import here whenever you add a new tool folder.
  * The key must match the tool's `route` field in the registry.
  */
-const toolComponents: Record<string, React.LazyExoticComponent<() => ReactNode>> = {
+const toolComponents: Record<string, LazyExoticComponent<() => ReactNode>> = {
   'robo-advisor': lazy(() => import('../tools/robo-advisor/index')),
 }
 
-function ToolShell({ children }: { children: ReactNode }) {
+function StandardShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <nav className="px-8 py-5 flex items-center gap-4 border-b border-zinc-800">
@@ -19,6 +19,21 @@ function ToolShell({ children }: { children: ReactNode }) {
         </Link>
       </nav>
       <main className="max-w-5xl mx-auto px-6 py-14">{children}</main>
+    </div>
+  )
+}
+
+function IframeShell({ tool, children }: { tool: ToolConfig; children: ReactNode }) {
+  return (
+    <div className="flex flex-col h-screen bg-zinc-950 text-white">
+      <nav className="shrink-0 px-8 py-4 flex items-center gap-4 border-b border-zinc-800">
+        <Link to="/dashboard" className="text-zinc-400 hover:text-white transition-colors text-sm">
+          ← Dashboard
+        </Link>
+        <span className="text-zinc-600 text-sm">|</span>
+        <span className="text-sm text-zinc-300">{tool.icon} {tool.name}</span>
+      </nav>
+      <div className="flex-1 min-h-0">{children}</div>
     </div>
   )
 }
@@ -35,23 +50,33 @@ export default function ToolPage() {
 
   if (!ToolComponent) {
     return (
-      <ToolShell>
+      <StandardShell>
         <p className="text-zinc-400">Tool component not found. Add it to ToolPage.tsx.</p>
-      </ToolShell>
+      </StandardShell>
+    )
+  }
+
+  const fallback = (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <span className="text-zinc-500 animate-pulse">Loading…</span>
+    </div>
+  )
+
+  if (tool.url) {
+    return (
+      <IframeShell tool={tool}>
+        <Suspense fallback={fallback}>
+          <ToolComponent />
+        </Suspense>
+      </IframeShell>
     )
   }
 
   return (
-    <ToolShell>
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <span className="text-zinc-500 animate-pulse">Loading...</span>
-          </div>
-        }
-      >
+    <StandardShell>
+      <Suspense fallback={fallback}>
         <ToolComponent />
       </Suspense>
-    </ToolShell>
+    </StandardShell>
   )
 }

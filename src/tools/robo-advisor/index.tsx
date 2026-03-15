@@ -1,21 +1,22 @@
-import { useLogInteraction } from '../../hooks/useLogInteraction'
-import { useEffect } from 'react'
+import { useState } from 'react'
 
 export default function RoboAdvisor() {
-  const log = useLogInteraction('robo-advisor')
-
-  useEffect(() => {
-    log('tool_view')
-  }, [log])
+  const [loaded, setLoaded] = useState(false)
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
-      <span className="text-6xl">📈</span>
-      <h1 className="text-3xl font-bold text-white">Robo Advisor</h1>
-      <p className="text-zinc-400 text-lg">Coming Soon</p>
-      <p className="text-zinc-500 max-w-md">
-        AI-powered investment guidance tailored to your financial goals. Check back soon.
-      </p>
+    <div className="relative w-full h-full">
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-zinc-950">
+          <span className="text-zinc-500 animate-pulse text-sm">Loading Robo Advisor…</span>
+        </div>
+      )}
+      <iframe
+        src="https://robo-advisor-ai-umber.vercel.app/"
+        title="Robo Advisor"
+        onLoad={() => setLoaded(true)}
+        className="w-full h-full border-0"
+        allow="clipboard-write"
+      />
     </div>
   )
 }

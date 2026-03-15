@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { enabledTools, ToolConfig } from '../tools/registry'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -23,8 +23,14 @@ function ToolCard({ tool }: { tool: ToolConfig }) {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
   const tools = enabledTools()
+
+  async function handleSignOut() {
+    await signOut()
+    navigate('/')
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -33,7 +39,23 @@ export default function Dashboard() {
         <Link to="/" className="text-lg font-semibold tracking-tight hover:text-indigo-400 transition-colors">
           Personal AI
         </Link>
-        <span className="text-sm text-zinc-500">{user?.email}</span>
+        <div className="flex items-center gap-4">
+          {user ? (
+            <>
+              <span className="text-sm text-zinc-500">{user.email}</span>
+              <button
+                onClick={handleSignOut}
+                className="text-sm text-zinc-400 hover:text-white transition-colors"
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <Link to="/auth" className="text-sm text-zinc-400 hover:text-white transition-colors">
+              Sign In
+            </Link>
+          )}
+        </div>
       </nav>
 
       <main className="max-w-5xl mx-auto px-6 py-14">
