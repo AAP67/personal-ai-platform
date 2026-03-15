@@ -42,14 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await firebaseSignOut(auth)
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <span className="text-zinc-500 animate-pulse text-sm">Loading…</span>
-      </div>
-    )
-  }
-
   return (
     <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
       {children}
