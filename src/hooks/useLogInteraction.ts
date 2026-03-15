@@ -22,7 +22,7 @@ export function useLogInteraction(toolId: string) {
   const logInteraction = useCallback(
     (actionType: string, content: unknown = null) => {
       const log: InteractionLog = {
-        userId: user?.id ?? null,
+        userId: user?.uid ?? null,
         timestamp: new Date().toISOString(),
         toolId: toolIdRef.current,
         actionType,
