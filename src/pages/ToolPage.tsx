@@ -8,6 +8,8 @@ import { getToolById, ToolConfig } from '../tools/registry'
  */
 const toolComponents: Record<string, LazyExoticComponent<() => ReactNode>> = {
   'robo-advisor': lazy(() => import('../tools/robo-advisor/index')),
+  'equity-research': lazy(() => import('../tools/equity-research/index')),
+  'arkanex': lazy(() => import('../tools/arkanex/index')),
 }
 
 function StandardShell({ children }: { children: ReactNode }) {

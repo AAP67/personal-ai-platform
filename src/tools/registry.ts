@@ -25,6 +25,24 @@ export const toolRegistry: ToolConfig[] = [
     enabled: true,
     url: 'https://robo-advisor-ai-umber.vercel.app/',
   },
+  {
+    id: 'equity-research',
+    name: 'Markets Tool',
+    description: 'AI-powered equity research with real-time analysis, financials, and Claude-driven insights.',
+    icon: '🌐',
+    route: 'equity-research',
+    enabled: true,
+    url: 'https://equity-research-ai-francium77.streamlit.app/',
+  },
+  {
+    id: 'arkanex',
+    name: 'Career Tool',
+    description: 'AI-powered interview question generator for strategic roles. Practice with tailored questions for your target position.',
+    icon: '💼',
+    route: 'arkanex',
+    enabled: true,
+    url: 'https://arkanex-ai-interviewer.streamlit.app/',
+  },
 ]
 
 export function getToolById(id: string): ToolConfig | undefined {

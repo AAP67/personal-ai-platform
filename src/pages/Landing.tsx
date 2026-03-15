@@ -257,43 +257,59 @@ export default function Landing() {
               </span>
             </Link>
 
-            {/* Career Tool — Coming Soon */}
-            <div
-              className="reveal flex flex-col gap-5 p-6 rounded-2xl border"
-              style={{ background: 'rgba(255,255,255,0.015)', borderColor: 'rgba(255,255,255,0.05)', transitionDelay: '0.1s' }}
+            {/* Career Tool — Live */}
+            <Link
+              to="/tools/arkanex"
+              className="reveal group relative flex flex-col gap-5 p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1"
+              style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)', transitionDelay: '0.1s' }}
             >
+              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" style={{ boxShadow: '0 0 0 1px rgba(99,102,241,0.4), 0 0 40px rgba(99,102,241,0.08)' }} />
               <div className="flex items-start justify-between">
-                <span className="text-3xl grayscale opacity-30">💼</span>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full border" style={{ background: 'rgba(255,255,255,0.03)', color: '#52525b', borderColor: 'rgba(255,255,255,0.06)' }}>
-                  Coming Soon
+                <span className="text-3xl">💼</span>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full border" style={{ background: 'rgba(16,185,129,0.08)', color: '#34d399', borderColor: 'rgba(16,185,129,0.2)' }}>
+                  Live
                 </span>
               </div>
-              <div className="flex flex-col gap-2">
-                <h3 className="font-semibold text-zinc-600 text-base">Career Tool</h3>
-                <p className="text-zinc-700 text-sm leading-relaxed">
-                  Resume coaching, interview prep, and career path planning powered by AI.
+              <div className="flex flex-col gap-2 flex-1">
+                <h3 className="font-semibold text-white text-base group-hover:text-indigo-300 transition-colors">
+                  Career Tool
+                </h3>
+                <p className="text-zinc-500 text-sm leading-relaxed">
+                  AI-powered interview question generator for strategic roles. Practice with tailored questions for your target position.
                 </p>
               </div>
-            </div>
+              <span className="text-xs text-zinc-600 group-hover:text-indigo-400 transition-colors flex items-center gap-1">
+                Open
+                <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+              </span>
+            </Link>
 
-            {/* Markets Tool — Coming Soon */}
-            <div
-              className="reveal flex flex-col gap-5 p-6 rounded-2xl border"
-              style={{ background: 'rgba(255,255,255,0.015)', borderColor: 'rgba(255,255,255,0.05)', transitionDelay: '0.2s' }}
+            {/* Markets Tool — Live */}
+            <Link
+              to="/tools/equity-research"
+              className="reveal group relative flex flex-col gap-5 p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1"
+              style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)', transitionDelay: '0.2s' }}
             >
+              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" style={{ boxShadow: '0 0 0 1px rgba(99,102,241,0.4), 0 0 40px rgba(99,102,241,0.08)' }} />
               <div className="flex items-start justify-between">
-                <span className="text-3xl grayscale opacity-30">🌐</span>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full border" style={{ background: 'rgba(255,255,255,0.03)', color: '#52525b', borderColor: 'rgba(255,255,255,0.06)' }}>
-                  Coming Soon
+                <span className="text-3xl">🌐</span>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full border" style={{ background: 'rgba(16,185,129,0.08)', color: '#34d399', borderColor: 'rgba(16,185,129,0.2)' }}>
+                  Live
                 </span>
               </div>
-              <div className="flex flex-col gap-2">
-                <h3 className="font-semibold text-zinc-600 text-base">Markets Tool</h3>
-                <p className="text-zinc-700 text-sm leading-relaxed">
+              <div className="flex flex-col gap-2 flex-1">
+                <h3 className="font-semibold text-white text-base group-hover:text-indigo-300 transition-colors">
+                  Markets Tool
+                </h3>
+                <p className="text-zinc-500 text-sm leading-relaxed">
                   Real-time market intelligence with AI-driven summaries and trend analysis.
                 </p>
               </div>
-            </div>
+              <span className="text-xs text-zinc-600 group-hover:text-indigo-400 transition-colors flex items-center gap-1">
+                Open
+                <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+              </span>
+            </Link>
 
           </div>
         </div>
