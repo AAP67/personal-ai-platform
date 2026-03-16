@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { useEffect } from 'react'
 import { toolsByCategory, categoryOrder, categoryMeta, ToolConfig } from '../tools/registry'
 
 // ── SVG Icons ────────────────────────────────────────────────────
@@ -28,48 +27,59 @@ function MailIcon({ className }: { className?: string }) {
   )
 }
 
-// ── Tool Card ────────────────────────────────────────────────────
-function ToolCard({ tool, delay }: { tool: ToolConfig; delay: number }) {
+// ── Tool Card with category accent ───────────────────────────────
+function ToolCard({ tool, accent, accentBorder, accentBg }: {
+  tool: ToolConfig
+  accent: string
+  accentBorder: string
+  accentBg: string
+}) {
   return (
     <Link
       to={`/tools/${tool.route}`}
-      className="reveal group relative flex flex-col gap-4 p-5 rounded-xl border transition-all duration-300 hover:-translate-y-1"
+      className="group relative flex flex-col gap-3 p-4 rounded-lg border transition-all duration-200 hover:-translate-y-0.5"
       style={{
         background: 'rgba(255,255,255,0.02)',
-        borderColor: 'rgba(255,255,255,0.07)',
-        transitionDelay: `${delay * 0.06}s`,
+        borderColor: 'rgba(255,255,255,0.06)',
+        borderLeftWidth: '2px',
+        borderLeftColor: accentBorder,
       }}
     >
-      {/* Hover glow */}
+      {/* Hover glow uses category accent */}
       <div
-        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-        style={{ boxShadow: '0 0 0 1px rgba(99,102,241,0.35), 0 0 30px rgba(99,102,241,0.06)' }}
+        className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+        style={{ boxShadow: `0 0 0 1px ${accentBorder}, 0 0 24px ${accentBg}` }}
       />
 
-      <div className="flex items-start justify-between">
-        <span className="text-2xl">{tool.icon}</span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-7 h-7 rounded-md flex items-center justify-center text-sm"
+            style={{ background: accentBg, border: `1px solid ${accentBorder}` }}
+          >
+            {tool.icon}
+          </div>
+          <h3
+            className="font-display font-semibold text-white text-[13px] group-hover:transition-colors"
+            style={{ ['--hover-color' as string]: accent }}
+          >
+            <span className="group-hover:text-indigo-300">{tool.name}</span>
+          </h3>
+        </div>
         <span
-          className="text-[10px] font-semibold px-2 py-0.5 rounded-full border font-mono tracking-wide"
-          style={{ background: 'rgba(16,185,129,0.08)', color: '#34d399', borderColor: 'rgba(16,185,129,0.2)' }}
+          className="text-[9px] font-bold px-1.5 py-0.5 rounded font-mono tracking-wider"
+          style={{ background: 'rgba(16,185,129,0.1)', color: '#34d399' }}
         >
           LIVE
         </span>
       </div>
 
-      <div className="flex flex-col gap-1.5 flex-1">
-        <h3 className="font-display font-semibold text-white text-[15px] group-hover:text-indigo-300 transition-colors">
-          {tool.name}
-        </h3>
-        <p className="font-body text-zinc-500 text-sm leading-relaxed">
-          {tool.description}
-        </p>
-      </div>
+      <p className="font-body text-zinc-500 text-xs leading-relaxed">
+        {tool.description}
+      </p>
 
-      <span className="text-xs text-zinc-600 group-hover:text-indigo-400 transition-colors flex items-center gap-1 font-body">
-        Open
-        <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-        </svg>
+      <span className="text-[11px] text-zinc-600 group-hover:text-zinc-400 transition-colors flex items-center gap-1 font-mono mt-auto">
+        Open →
       </span>
     </Link>
   )
@@ -79,429 +89,224 @@ function ToolCard({ tool, delay }: { tool: ToolConfig; delay: number }) {
 export default function Landing() {
   const grouped = toolsByCategory()
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) entry.target.classList.add('visible')
-        })
-      },
-      { threshold: 0.1 },
-    )
-    document.querySelectorAll('.reveal').forEach((el) => observer.observe(el))
-    return () => observer.disconnect()
-  }, [])
-
-  let globalToolIndex = 0
-
   return (
-    <div className="min-h-screen text-white flex flex-col font-body" style={{ background: '#08080d' }}>
+    <div className="h-screen flex flex-col font-body overflow-hidden" style={{ background: '#08080d' }}>
 
-      {/* ── Nav ── */}
+      {/* ── Top Bar ── */}
       <nav
-        className="sticky top-0 z-50 px-6 sm:px-10 py-4 flex items-center justify-between border-b backdrop-blur-md"
-        style={{ background: 'rgba(8,8,13,0.88)', borderColor: 'rgba(255,255,255,0.05)' }}
+        className="shrink-0 px-6 py-3.5 flex items-center justify-between border-b"
+        style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(8,8,13,0.95)' }}
       >
-        <span className="font-display text-sm font-bold tracking-tight text-white">
-          Personal AI
-        </span>
+        <div className="flex items-center gap-3.5">
+          {/* Francium mark — larger */}
+          <div
+            className="w-9 h-9 rounded-lg flex items-center justify-center border"
+            style={{
+              background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.12))',
+              borderColor: 'rgba(99,102,241,0.3)',
+            }}
+          >
+            <span className="font-display text-sm font-extrabold text-indigo-400">Fr</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="font-display text-lg font-extrabold tracking-tight text-white">
+              Francium
+            </span>
+            <span className="text-[10px] font-mono text-zinc-600 hidden sm:inline">
+              element 87
+            </span>
+          </div>
+        </div>
+
         <div className="flex items-center gap-3">
-          <Link to="/auth" className="text-sm text-zinc-500 hover:text-white transition-colors px-3 py-1.5">
+          <Link to="/auth" className="text-xs text-zinc-500 hover:text-white transition-colors px-2 py-1">
             Sign In
           </Link>
           <Link
             to="/dashboard"
-            className="text-sm font-semibold px-4 py-2 rounded-lg border border-indigo-500/30 text-indigo-300 hover:text-white hover:border-indigo-400 hover:bg-indigo-500/10 transition-all duration-200"
+            className="text-xs font-semibold px-3.5 py-1.5 rounded-md border border-indigo-500/30 text-indigo-300 hover:text-white hover:border-indigo-400 hover:bg-indigo-500/10 transition-all duration-200"
           >
             Dashboard
           </Link>
         </div>
       </nav>
 
-      {/* ══════════════════════════════════════════════════════════
-          HERO
-      ══════════════════════════════════════════════════════════ */}
-      <section className="relative flex flex-col items-center justify-center min-h-screen px-6 text-center overflow-hidden grain">
-        {/* Ambient glow */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          <div
-            className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] rounded-full opacity-15"
-            style={{ background: 'radial-gradient(ellipse, #6366f1 0%, transparent 70%)', filter: 'blur(80px)' }}
-          />
-        </div>
+      {/* ── Main Split ── */}
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0">
 
-        <div className="relative max-w-3xl mx-auto flex flex-col items-center gap-7 z-10">
-          {/* Tool count chip */}
-          <div
-            className="hero-animate count-badge flex items-center gap-2 px-4 py-1.5 rounded-full border"
-            style={{
-              animationDelay: '0s',
-              background: 'rgba(99,102,241,0.06)',
-              borderColor: 'rgba(99,102,241,0.2)',
-            }}
-          >
-            <span className="font-mono text-xs font-medium text-indigo-400">7 tools</span>
-            <span className="text-zinc-700">·</span>
-            <span className="font-mono text-xs font-medium text-indigo-400">3 domains</span>
-            <span className="text-zinc-700">·</span>
-            <span className="font-mono text-xs font-medium text-emerald-400">all live</span>
+        {/* ── LEFT PANEL ── */}
+        <aside
+          className="lg:w-[340px] xl:w-[380px] shrink-0 border-b lg:border-b-0 lg:border-r flex flex-col p-6 lg:p-8 overflow-y-auto"
+          style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+        >
+          {/* Top section: Brand thesis */}
+          <div className="flex flex-col gap-5">
+
+            <h1 className="font-display text-[26px] xl:text-[30px] font-extrabold text-white leading-[1.15] tracking-tight">
+              Your tools define{' '}
+              <span className="gradient-text">your AI</span>
+            </h1>
+
+            <p className="text-sm text-zinc-500 leading-relaxed">
+              A platform where tool usage — not forms — builds a model of who you are.
+              Every search, decision, and interaction is a signal.
+            </p>
+
+            {/* Thesis pill — bolder */}
+            <div
+              className="relative flex items-center gap-2.5 px-4 py-2.5 rounded-lg border self-start overflow-hidden"
+              style={{
+                background: 'rgba(99,102,241,0.06)',
+                borderColor: 'rgba(99,102,241,0.18)',
+              }}
+            >
+              {/* Subtle shimmer */}
+              <div
+                className="absolute inset-0 opacity-30 pointer-events-none"
+                style={{
+                  background: 'linear-gradient(135deg, transparent 40%, rgba(99,102,241,0.08) 50%, transparent 60%)',
+                }}
+              />
+              <span className="font-mono text-xs text-indigo-300 font-semibold relative">revealed preferences</span>
+              <span className="text-indigo-500/60 font-mono text-xs font-bold relative">&gt;</span>
+              <span className="font-mono text-xs text-zinc-500 relative">stated preferences</span>
+            </div>
           </div>
 
-          <h1
-            className="hero-animate font-display text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.05] tracking-tight"
-            style={{ animationDelay: '0.1s' }}
-          >
-            Your Tools Define{' '}
-            <span className="gradient-text">Your AI</span>
-          </h1>
+          {/* Divider */}
+          <div className="w-full h-px my-6" style={{ background: 'rgba(255,255,255,0.06)' }} />
 
-          <p
-            className="hero-animate text-lg text-zinc-500 max-w-xl leading-relaxed"
-            style={{ animationDelay: '0.2s' }}
-          >
-            A platform where your tool usage — not forms or questionnaires — builds a model of who you are.
-          </p>
+          {/* Middle section: Builder */}
+          <div className="flex flex-col gap-3">
+            <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-zinc-600">Built by</span>
+            <span className="font-display text-xl font-bold text-white">Karan Rajpal</span>
 
-          <p
-            className="hero-animate text-sm text-zinc-600"
-            style={{ animationDelay: '0.25s' }}
-          >
-            Built by <span className="text-zinc-300 font-medium">Karan Rajpal</span>
-          </p>
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {[
+                'Berkeley Haas MBA',
+                'Borderless Capital',
+                'KAUST Investment',
+                'Handshake AI',
+              ].map((chip) => (
+                <span
+                  key={chip}
+                  className="text-[10px] font-medium px-2 py-1 rounded border text-zinc-500"
+                  style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.07)' }}
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
 
-          <Link
-            to="/dashboard"
-            className="hero-animate mt-2 inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-8 py-4 rounded-xl text-sm transition-all duration-200 shadow-2xl shadow-indigo-950/60 hover:shadow-indigo-900/50 hover:-translate-y-0.5"
-            style={{ animationDelay: '0.35s' }}
-          >
-            Explore the Tools
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-          </Link>
-        </div>
-
-        {/* Scroll hint */}
-        <div
-          className="hero-animate absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-zinc-700"
-          style={{ animationDelay: '0.9s' }}
-        >
-          <span className="text-[10px] tracking-[0.25em] uppercase font-mono">Scroll</span>
-          <svg className="w-3.5 h-3.5 animate-bounce" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          THE TOOLS — proof first
-      ══════════════════════════════════════════════════════════ */}
-      <section className="relative px-6 py-28 border-t" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-        <div className="max-w-5xl mx-auto">
-
-          <div className="reveal text-center mb-20">
-            <span className="font-mono text-xs font-medium tracking-[0.2em] uppercase text-indigo-400">
-              Suite
-            </span>
-            <h2 className="font-display mt-3 text-3xl sm:text-4xl font-bold text-white">
-              The Tools
-            </h2>
-            <p className="text-zinc-600 mt-3 text-base max-w-md mx-auto">
-              Each one solves a real problem. Together, they reveal how you think.
+            <p className="text-xs text-zinc-600 mt-1">
+              I build at the intersection of finance, operations, and AI.
             </p>
           </div>
 
-          <div className="flex flex-col gap-16">
-            {categoryOrder.map((cat) => {
-              const tools = grouped[cat]
-              if (!tools || tools.length === 0) return null
-              const meta = categoryMeta[cat]
+          {/* Divider */}
+          <div className="w-full h-px my-6" style={{ background: 'rgba(255,255,255,0.06)' }} />
 
-              return (
-                <div key={cat}>
-                  {/* Category header */}
-                  <div className="reveal flex items-center gap-4 mb-6">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-lg">{meta.emoji}</span>
-                      <h3 className="font-display text-base font-semibold text-white">
+          {/* Stats */}
+          <div className="flex items-center gap-5">
+            {[
+              { val: '7', label: 'tools' },
+              { val: '3', label: 'domains' },
+              { val: '∞', label: 'signals' },
+            ].map((s) => (
+              <div key={s.label} className="flex items-baseline gap-1.5">
+                <span className="font-mono text-lg font-bold text-indigo-400">{s.val}</span>
+                <span className="font-mono text-[10px] text-zinc-600">{s.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Spacer to push links to bottom */}
+          <div className="flex-1 min-h-4" />
+
+          {/* Social + copyright */}
+          <div className="flex flex-col gap-3 mt-6">
+            <div className="flex items-center gap-3">
+              <a
+                href="https://github.com/AAP67"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white transition-colors"
+              >
+                <GitHubIcon className="w-3.5 h-3.5" />
+                <span>GitHub</span>
+              </a>
+              <div className="w-px h-3 bg-zinc-800" />
+              <a
+                href="https://www.linkedin.com/in/krajpal/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white transition-colors"
+              >
+                <LinkedInIcon className="w-3.5 h-3.5" />
+                <span>LinkedIn</span>
+              </a>
+              <div className="w-px h-3 bg-zinc-800" />
+              <a
+                href="mailto:krajpal0995@gmail.com"
+                className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white transition-colors"
+              >
+                <MailIcon className="w-3.5 h-3.5" />
+                <span>Email</span>
+              </a>
+            </div>
+
+            <span className="font-mono text-[10px] text-zinc-800">
+              © 2026 Francium
+            </span>
+          </div>
+        </aside>
+
+        {/* ── RIGHT PANEL ── */}
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+          <div className="max-w-3xl">
+
+            <div className="flex flex-col gap-8">
+              {categoryOrder.map((cat) => {
+                const tools = grouped[cat]
+                if (!tools || tools.length === 0) return null
+                const meta = categoryMeta[cat]
+
+                return (
+                  <section key={cat}>
+                    {/* Category header with accent line */}
+                    <div className="flex items-center gap-2.5 mb-3">
+                      <div
+                        className="w-1 h-4 rounded-full"
+                        style={{ background: meta.accent }}
+                      />
+                      <h2 className="font-display text-xs font-semibold uppercase tracking-wider" style={{ color: meta.accent }}>
                         {cat}
-                      </h3>
+                      </h2>
+                      <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.04)' }} />
+                      <span className="font-mono text-[10px] text-zinc-700">
+                        {tools.length}
+                      </span>
                     </div>
-                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-                    <span className="font-mono text-xs text-zinc-600">
-                      {tools.length} {tools.length === 1 ? 'tool' : 'tools'}
-                    </span>
-                  </div>
 
-                  {/* Tool grid */}
-                  <div className={`grid gap-4 ${tools.length === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}>
-                    {tools.map((tool) => {
-                      const idx = globalToolIndex++
-                      return <ToolCard key={tool.id} tool={tool} delay={idx} />
-                    })}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          THE THESIS
-      ══════════════════════════════════════════════════════════ */}
-      <section
-        className="relative flex flex-col items-center justify-center min-h-[65vh] px-6 py-28 text-center border-t"
-        style={{ borderColor: 'rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.012)' }}
-      >
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-px" style={{ background: 'linear-gradient(90deg, transparent, #6366f1, transparent)' }} />
-
-        <div className="max-w-2xl mx-auto flex flex-col items-center gap-8">
-          <span className="reveal font-mono text-xs font-medium tracking-[0.2em] uppercase text-indigo-400">
-            Thesis
-          </span>
-          <h2 className="reveal font-display text-3xl sm:text-4xl font-bold text-white leading-tight">
-            Identity Is a Pattern,<br />Not a Profile
-          </h2>
-          <p className="reveal text-lg text-zinc-500 leading-relaxed" style={{ transitionDelay: '0.08s' }}>
-            Every AI product asks users to describe themselves — fill out a form, set preferences, answer questions.
-            But stated preferences are unreliable. What you actually reach for, how you reason through decisions,
-            which risks you take — that's the real signal.
-          </p>
-          <p className="reveal text-lg text-zinc-500 leading-relaxed" style={{ transitionDelay: '0.14s' }}>
-            This platform learns you by working alongside you.
-            No onboarding. No questionnaires. Just tools — and the patterns that emerge from using them.
-          </p>
-
-          <div
-            className="reveal flex items-center gap-3 mt-4 px-5 py-3 rounded-lg border"
-            style={{
-              transitionDelay: '0.2s',
-              background: 'rgba(99,102,241,0.04)',
-              borderColor: 'rgba(99,102,241,0.15)',
-            }}
-          >
-            <span className="font-mono text-sm text-indigo-400 font-medium">Revealed preferences</span>
-            <span className="text-zinc-600 font-mono text-sm">&gt;</span>
-            <span className="font-mono text-sm text-zinc-500">stated preferences</span>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          HOW IT WORKS
-      ══════════════════════════════════════════════════════════ */}
-      <section className="relative flex flex-col items-center justify-center px-6 py-28 border-t" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-        <div className="max-w-5xl mx-auto w-full">
-
-          <div className="reveal text-center mb-16">
-            <span className="font-mono text-xs font-medium tracking-[0.2em] uppercase text-indigo-400">Process</span>
-            <h2 className="font-display mt-3 text-3xl sm:text-4xl font-bold text-white">How It Works</h2>
-            <p className="text-zinc-600 mt-3 text-base">Three steps. No configuration.</p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0">
-
-            {/* Step 1 */}
-            <div className="reveal flex-1 flex flex-col items-center text-center gap-4 px-6">
-              <div
-                className="w-14 h-14 rounded-xl flex items-center justify-center border"
-                style={{ background: 'rgba(99,102,241,0.06)', borderColor: 'rgba(99,102,241,0.15)' }}
-              >
-                <span className="font-mono text-indigo-400 font-bold text-lg">01</span>
-              </div>
-              <div>
-                <h3 className="font-display font-semibold text-white text-base">Choose Your Tools</h3>
-                <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-                  Pick from 7 AI tools across finance, strategy, and career — each built for a domain that matters.
-                </p>
-              </div>
-            </div>
-
-            {/* Connector */}
-            <div className="flex-shrink-0 self-center my-6 sm:my-0">
-              <div className="hidden sm:block w-12 h-px" style={{ background: 'linear-gradient(90deg, rgba(99,102,241,0.2), rgba(99,102,241,0.4), rgba(99,102,241,0.2))' }} />
-              <div className="sm:hidden w-px h-8 mx-auto" style={{ background: 'linear-gradient(180deg, rgba(99,102,241,0.2), rgba(99,102,241,0.4))' }} />
-            </div>
-
-            {/* Step 2 */}
-            <div className="reveal flex-1 flex flex-col items-center text-center gap-4 px-6" style={{ transitionDelay: '0.1s' }}>
-              <div
-                className="w-14 h-14 rounded-xl flex items-center justify-center border"
-                style={{ background: 'rgba(99,102,241,0.06)', borderColor: 'rgba(99,102,241,0.15)' }}
-              >
-                <span className="font-mono text-indigo-400 font-bold text-lg">02</span>
-              </div>
-              <div>
-                <h3 className="font-display font-semibold text-white text-base">Use Them Naturally</h3>
-                <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-                  No forms. No profiles. Every search, decision, and interaction is logged as a signal.
-                </p>
-              </div>
-            </div>
-
-            {/* Connector */}
-            <div className="flex-shrink-0 self-center my-6 sm:my-0">
-              <div className="hidden sm:block w-12 h-px" style={{ background: 'linear-gradient(90deg, rgba(99,102,241,0.2), rgba(99,102,241,0.4), rgba(99,102,241,0.2))' }} />
-              <div className="sm:hidden w-px h-8 mx-auto" style={{ background: 'linear-gradient(180deg, rgba(99,102,241,0.2), rgba(99,102,241,0.4))' }} />
-            </div>
-
-            {/* Step 3 */}
-            <div className="reveal flex-1 flex flex-col items-center text-center gap-4 px-6" style={{ transitionDelay: '0.2s' }}>
-              <div
-                className="w-14 h-14 rounded-xl flex items-center justify-center border"
-                style={{ background: 'rgba(99,102,241,0.06)', borderColor: 'rgba(99,102,241,0.15)' }}
-              >
-                <span className="font-mono text-indigo-400 font-bold text-lg">03</span>
-              </div>
-              <div>
-                <h3 className="font-display font-semibold text-white text-base">AI That Knows You</h3>
-                <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-                  The platform infers your interests, reasoning style, and priorities — so it helps the way you think.
-                </p>
-              </div>
+                    {/* Tool grid */}
+                    <div className={`grid gap-3 ${tools.length === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
+                      {tools.map((tool) => (
+                        <ToolCard
+                          key={tool.id}
+                          tool={tool}
+                          accent={meta.accent}
+                          accentBorder={meta.accentBorder}
+                          accentBg={meta.accentBg}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )
+              })}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          ARCHITECTURE
-      ══════════════════════════════════════════════════════════ */}
-      <section
-        className="relative flex flex-col items-center justify-center px-6 py-24 border-t"
-        style={{ borderColor: 'rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.012)' }}
-      >
-        <div className="max-w-3xl mx-auto w-full">
-          <div className="reveal text-center mb-12">
-            <span className="font-mono text-xs font-medium tracking-[0.2em] uppercase text-indigo-400">
-              Under the Hood
-            </span>
-            <h2 className="font-display mt-3 text-2xl sm:text-3xl font-bold text-white">
-              Tech Stack
-            </h2>
-          </div>
-
-          <div className="reveal flex flex-wrap justify-center gap-2.5">
-            {[
-              'React', 'TypeScript', 'Python', 'Claude API', 'LangGraph',
-              'Firebase', 'Supabase', 'Streamlit', 'Vercel', 'Tailwind CSS',
-            ].map((tech) => (
-              <span
-                key={tech}
-                className="font-mono text-xs px-3 py-1.5 rounded-md border text-zinc-400"
-                style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)' }}
-              >
-                {tech}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          WHO BUILT THIS
-      ══════════════════════════════════════════════════════════ */}
-      <section className="relative flex flex-col items-center justify-center min-h-[70vh] px-6 py-28 text-center border-t" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-        {/* Ambient glow */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-          <div
-            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[400px] h-[250px] opacity-8"
-            style={{ background: 'radial-gradient(ellipse, #818cf8 0%, transparent 70%)', filter: 'blur(50px)' }}
-          />
-        </div>
-
-        <div className="relative max-w-2xl mx-auto flex flex-col items-center gap-8 z-10">
-
-          <div className="reveal flex flex-col items-center gap-2">
-            <span className="font-mono text-xs font-medium tracking-[0.2em] uppercase text-indigo-400">Builder</span>
-            <h2 className="font-display text-3xl sm:text-4xl font-bold text-white">Who Built This</h2>
-          </div>
-
-          <div className="reveal font-display text-4xl sm:text-5xl font-extrabold tracking-tight" style={{ transitionDelay: '0.05s' }}>
-            <span className="gradient-text">Karan Rajpal</span>
-          </div>
-
-          {/* Credential chips */}
-          <div className="reveal flex flex-wrap items-center justify-center gap-2" style={{ transitionDelay: '0.1s' }}>
-            {[
-              'Berkeley Haas MBA',
-              'Borderless Capital',
-              'KAUST Investment Management',
-              'Handshake AI',
-            ].map((chip) => (
-              <span
-                key={chip}
-                className="text-xs font-medium px-3 py-1.5 rounded-full border text-zinc-400"
-                style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)' }}
-              >
-                {chip}
-              </span>
-            ))}
-          </div>
-
-          <p className="reveal text-base text-zinc-500 max-w-md" style={{ transitionDelay: '0.15s' }}>
-            I build at the intersection of finance, operations, and AI.
-          </p>
-
-          {/* Social links */}
-          <div className="reveal flex items-center gap-5" style={{ transitionDelay: '0.2s' }}>
-            <a
-              href="https://github.com/AAP67"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors duration-200"
-              aria-label="GitHub"
-            >
-              <GitHubIcon className="w-4.5 h-4.5 group-hover:scale-110 transition-transform duration-200" />
-              <span>GitHub</span>
-            </a>
-            <div className="w-px h-4 bg-zinc-800" />
-            <a
-              href="https://www.linkedin.com/in/krajpal/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors duration-200"
-              aria-label="LinkedIn"
-            >
-              <LinkedInIcon className="w-4.5 h-4.5 group-hover:scale-110 transition-transform duration-200" />
-              <span>LinkedIn</span>
-            </a>
-            <div className="w-px h-4 bg-zinc-800" />
-            <a
-              href="mailto:krajpal0995@gmail.com"
-              className="group flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors duration-200"
-              aria-label="Email"
-            >
-              <MailIcon className="w-4.5 h-4.5 group-hover:scale-110 transition-transform duration-200" />
-              <span>Email</span>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          FOOTER
-      ══════════════════════════════════════════════════════════ */}
-      <footer className="border-t py-8 px-6 sm:px-10" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="text-sm text-zinc-700">
-            Personal AI Platform &copy; 2026
-          </span>
-          <div className="flex items-center gap-4 text-sm text-zinc-600">
-            <span>
-              Built by <span className="text-zinc-400 font-medium">Karan Rajpal</span>
-            </span>
-            <a href="https://github.com/AAP67" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300 transition-colors" aria-label="GitHub">
-              <GitHubIcon className="w-4 h-4" />
-            </a>
-            <a href="https://www.linkedin.com/in/krajpal/" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300 transition-colors" aria-label="LinkedIn">
-              <LinkedInIcon className="w-4 h-4" />
-            </a>
-          </div>
-        </div>
-      </footer>
-
+        </main>
+      </div>
     </div>
   )
 }

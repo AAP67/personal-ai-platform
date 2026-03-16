@@ -112,8 +112,26 @@ export const categoryOrder: string[] = [
   'Career & Learning',
 ]
 
-export const categoryMeta: Record<string, { emoji: string; tagline: string }> = {
-  'Finance & Investment': { emoji: '💰', tagline: 'Portfolio optimization, equity research, and deal flow' },
-  'Strategy & Operations': { emoji: '⚙️', tagline: 'Decision frameworks and strategic analysis' },
-  'Career & Learning': { emoji: '🚀', tagline: 'Interview prep and AI-powered tutoring' },
+export const categoryMeta: Record<string, { emoji: string; tagline: string; accent: string; accentBorder: string; accentBg: string }> = {
+  'Finance & Investment': {
+    emoji: '💰',
+    tagline: 'Portfolio optimization, equity research, and deal flow',
+    accent: '#f59e0b',
+    accentBorder: 'rgba(245,158,11,0.2)',
+    accentBg: 'rgba(245,158,11,0.05)',
+  },
+  'Strategy & Operations': {
+    emoji: '⚙️',
+    tagline: 'Decision frameworks and strategic analysis',
+    accent: '#6366f1',
+    accentBorder: 'rgba(99,102,241,0.2)',
+    accentBg: 'rgba(99,102,241,0.05)',
+  },
+  'Career & Learning': {
+    emoji: '🚀',
+    tagline: 'Interview prep and AI-powered tutoring',
+    accent: '#10b981',
+    accentBorder: 'rgba(16,185,129,0.2)',
+    accentBg: 'rgba(16,185,129,0.05)',
+  },
 }

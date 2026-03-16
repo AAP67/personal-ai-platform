@@ -55,8 +55,17 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
       <nav className="px-8 py-5 border-b border-zinc-800">
-        <Link to="/" className="text-lg font-semibold tracking-tight hover:text-indigo-400 transition-colors">
-          Personal AI
+        <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <div
+            className="w-9 h-9 rounded-lg flex items-center justify-center border"
+            style={{
+              background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.12))',
+              borderColor: 'rgba(99,102,241,0.3)',
+            }}
+          >
+            <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '14px', fontWeight: 800, color: '#818cf8' }}>Fr</span>
+          </div>
+          <span style={{ fontFamily: 'Syne, sans-serif', fontSize: '18px', fontWeight: 800 }} className="text-white tracking-tight">Francium</span>
         </Link>
       </nav>
 

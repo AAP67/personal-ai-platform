@@ -44,8 +44,17 @@ export default function Dashboard() {
     <div className="min-h-screen text-white" style={{ background: '#0a0a0f' }}>
       {/* Nav */}
       <nav className="sticky top-0 z-50 px-8 py-4 flex items-center justify-between border-b backdrop-blur-md" style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(10,10,15,0.85)' }}>
-        <Link to="/" className="text-base font-semibold tracking-tight hover:text-indigo-400 transition-colors">
-          Personal AI
+        <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <div
+            className="w-9 h-9 rounded-lg flex items-center justify-center border"
+            style={{
+              background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.12))',
+              borderColor: 'rgba(99,102,241,0.3)',
+            }}
+          >
+            <span className="font-display text-sm font-extrabold text-indigo-400">Fr</span>
+          </div>
+          <span className="font-display text-lg font-extrabold tracking-tight text-white">Francium</span>
         </Link>
         <div className="flex items-center gap-4">
           {user ? (

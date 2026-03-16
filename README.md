@@ -1,4 +1,4 @@
-# Personal AI Platform
+# Francium
 
 **Your tools define your AI.**
 
