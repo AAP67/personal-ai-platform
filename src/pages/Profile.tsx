@@ -23,7 +23,11 @@ interface Stats {
 const TOOL_INSIGHTS: Record<string, string[]> = {
   'robo-advisor': ['Investment Strategy', 'Portfolio Optimization', 'Risk Analysis'],
   'equity-research': ['Equity Research', 'Market Analysis', 'Financial Modeling'],
+  'deal-sourcing': ['Deal Flow', 'Venture Capital', 'Due Diligence'],
+  'ai-chief-of-staff': ['Strategic Planning', 'Decision Frameworks', 'Prioritization'],
+  'ai-consultant': ['Strategy & Operations', 'Business Analysis', 'Advisory'],
   'arkanex': ['Career Development', 'Interview Prep', 'Strategic Roles'],
+  'finance-tutor': ['Finance Education', 'GMAT/CFA Prep', 'Quantitative Skills'],
 }
 
 function computeStats(interactions: Interaction[]): Stats {

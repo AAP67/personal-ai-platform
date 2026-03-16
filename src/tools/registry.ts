@@ -2,46 +2,88 @@ export interface ToolConfig {
   id: string
   name: string
   description: string
-  icon: string        // emoji or icon name — swap for a component library later
-  route: string       // relative path under /tools/
+  icon: string
+  route: string
   enabled: boolean
-  url?: string        // if set, the tool renders as a full-height iframe
+  url?: string
+  category: 'Finance & Investment' | 'Strategy & Operations' | 'Career & Learning'
 }
 
-/**
- * Central tool registry.
- * To add a new tool:
- *  1. Create src/tools/<tool-id>/index.tsx
- *  2. Add an entry here
- *  3. Register the lazy import in src/pages/ToolPage.tsx
- */
 export const toolRegistry: ToolConfig[] = [
+  // ── Finance & Investment ──────────────────────────────────────
   {
     id: 'robo-advisor',
     name: 'Robo Advisor',
-    description: 'AI-powered investment guidance tailored to your financial goals.',
+    description: 'Multi-agent LLM system (LangGraph + Claude) with Black-Litterman portfolio optimization.',
     icon: '📈',
     route: 'robo-advisor',
     enabled: true,
     url: 'https://robo-advisor-ai-umber.vercel.app/',
+    category: 'Finance & Investment',
   },
   {
     id: 'equity-research',
-    name: 'Markets Tool',
+    name: 'Equity Research',
     description: 'AI-powered equity research with real-time analysis, financials, and Claude-driven insights.',
     icon: '🌐',
     route: 'equity-research',
     enabled: true,
     url: 'https://equity-research-ai-francium77.streamlit.app/?embed=true',
+    category: 'Finance & Investment',
   },
   {
+    id: 'deal-sourcing',
+    name: 'VC Deal Sourcing',
+    description: 'Automated deal pipeline — filters by industry, stage, and KPIs using AI-powered web research.',
+    icon: '🔍',
+    route: 'deal-sourcing',
+    enabled: true,
+    url: 'https://deal-sourcing-francium77.streamlit.app/?embed=true',
+    category: 'Finance & Investment',
+  },
+
+  // ── Strategy & Operations ─────────────────────────────────────
+  {
+    id: 'ai-chief-of-staff',
+    name: 'AI Chief of Staff',
+    description: 'Strategic analysis tool for founders — frameworks, prioritization, and decision support.',
+    icon: '🎯',
+    route: 'ai-chief-of-staff',
+    enabled: true,
+    url: 'https://arkanecos.streamlit.app/?embed=true',
+    category: 'Strategy & Operations',
+  },
+  {
+    id: 'ai-consultant',
+    name: 'AI Consultant',
+    description: 'RAG-powered strategy and operations advisor with document-grounded insights.',
+    icon: '🧠',
+    route: 'ai-consultant',
+    enabled: true,
+    url: 'https://arkanexconsultant.streamlit.app/?embed=true',
+    category: 'Strategy & Operations',
+  },
+
+  // ── Career & Learning ─────────────────────────────────────────
+  {
     id: 'arkanex',
-    name: 'Career Tool',
-    description: 'AI-powered interview question generator for strategic roles. Practice with tailored questions for your target position.',
+    name: 'AI Interviewer',
+    description: 'AI-powered interview question generator for strategic roles. Tailored practice for your target position.',
     icon: '💼',
     route: 'arkanex',
     enabled: true,
     url: 'https://arkanex-ai-interviewer.streamlit.app/?embed=true',
+    category: 'Career & Learning',
+  },
+  {
+    id: 'finance-tutor',
+    name: 'Finance Tutor',
+    description: 'Self-correcting tutor that routes by complexity, shows cost upfront, and learns from its mistakes.',
+    icon: '📚',
+    route: 'finance-tutor',
+    enabled: true,
+    url: 'https://finance-tutor-five.vercel.app/',
+    category: 'Career & Learning',
   },
 ]
 
@@ -51,4 +93,27 @@ export function getToolById(id: string): ToolConfig | undefined {
 
 export function enabledTools(): ToolConfig[] {
   return toolRegistry.filter((t) => t.enabled)
+}
+
+export function toolsByCategory(): Record<string, ToolConfig[]> {
+  const categories: Record<string, ToolConfig[]> = {}
+  for (const tool of enabledTools()) {
+    if (!categories[tool.category]) {
+      categories[tool.category] = []
+    }
+    categories[tool.category].push(tool)
+  }
+  return categories
+}
+
+export const categoryOrder: string[] = [
+  'Finance & Investment',
+  'Strategy & Operations',
+  'Career & Learning',
+]
+
+export const categoryMeta: Record<string, { emoji: string; tagline: string }> = {
+  'Finance & Investment': { emoji: '💰', tagline: 'Portfolio optimization, equity research, and deal flow' },
+  'Strategy & Operations': { emoji: '⚙️', tagline: 'Decision frameworks and strategic analysis' },
+  'Career & Learning': { emoji: '🚀', tagline: 'Interview prep and AI-powered tutoring' },
 }

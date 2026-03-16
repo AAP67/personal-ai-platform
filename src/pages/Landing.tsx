@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 import { useEffect } from 'react'
+import { toolsByCategory, categoryOrder, categoryMeta, ToolConfig } from '../tools/registry'
 
-// SVG Icons
+// ── SVG Icons ────────────────────────────────────────────────────
 function GitHubIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -27,333 +28,419 @@ function MailIcon({ className }: { className?: string }) {
   )
 }
 
+// ── Tool Card ────────────────────────────────────────────────────
+function ToolCard({ tool, delay }: { tool: ToolConfig; delay: number }) {
+  return (
+    <Link
+      to={`/tools/${tool.route}`}
+      className="reveal group relative flex flex-col gap-4 p-5 rounded-xl border transition-all duration-300 hover:-translate-y-1"
+      style={{
+        background: 'rgba(255,255,255,0.02)',
+        borderColor: 'rgba(255,255,255,0.07)',
+        transitionDelay: `${delay * 0.06}s`,
+      }}
+    >
+      {/* Hover glow */}
+      <div
+        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{ boxShadow: '0 0 0 1px rgba(99,102,241,0.35), 0 0 30px rgba(99,102,241,0.06)' }}
+      />
+
+      <div className="flex items-start justify-between">
+        <span className="text-2xl">{tool.icon}</span>
+        <span
+          className="text-[10px] font-semibold px-2 py-0.5 rounded-full border font-mono tracking-wide"
+          style={{ background: 'rgba(16,185,129,0.08)', color: '#34d399', borderColor: 'rgba(16,185,129,0.2)' }}
+        >
+          LIVE
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-1.5 flex-1">
+        <h3 className="font-display font-semibold text-white text-[15px] group-hover:text-indigo-300 transition-colors">
+          {tool.name}
+        </h3>
+        <p className="font-body text-zinc-500 text-sm leading-relaxed">
+          {tool.description}
+        </p>
+      </div>
+
+      <span className="text-xs text-zinc-600 group-hover:text-indigo-400 transition-colors flex items-center gap-1 font-body">
+        Open
+        <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+        </svg>
+      </span>
+    </Link>
+  )
+}
+
+// ── Landing Page ─────────────────────────────────────────────────
 export default function Landing() {
+  const grouped = toolsByCategory()
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible')
-          }
+          if (entry.isIntersecting) entry.target.classList.add('visible')
         })
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     )
     document.querySelectorAll('.reveal').forEach((el) => observer.observe(el))
     return () => observer.disconnect()
   }, [])
 
+  let globalToolIndex = 0
+
   return (
-    <div className="min-h-screen text-white flex flex-col scroll-smooth" style={{ background: '#0a0a0f' }}>
+    <div className="min-h-screen text-white flex flex-col font-body" style={{ background: '#08080d' }}>
 
       {/* ── Nav ── */}
-      <nav className="sticky top-0 z-50 px-6 sm:px-10 py-4 flex items-center justify-between border-b border-white/5 backdrop-blur-md" style={{ background: 'rgba(10,10,15,0.85)' }}>
-        <span className="text-base font-semibold tracking-tight text-white">Personal AI</span>
+      <nav
+        className="sticky top-0 z-50 px-6 sm:px-10 py-4 flex items-center justify-between border-b backdrop-blur-md"
+        style={{ background: 'rgba(8,8,13,0.88)', borderColor: 'rgba(255,255,255,0.05)' }}
+      >
+        <span className="font-display text-sm font-bold tracking-tight text-white">
+          Personal AI
+        </span>
         <div className="flex items-center gap-3">
-          <Link to="/auth" className="text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5">
+          <Link to="/auth" className="text-sm text-zinc-500 hover:text-white transition-colors px-3 py-1.5">
             Sign In
           </Link>
           <Link
             to="/dashboard"
-            className="text-sm font-semibold px-4 py-2 rounded-lg border border-indigo-500/40 text-indigo-300 hover:text-white hover:border-indigo-400 hover:bg-indigo-500/10 transition-all duration-200"
+            className="text-sm font-semibold px-4 py-2 rounded-lg border border-indigo-500/30 text-indigo-300 hover:text-white hover:border-indigo-400 hover:bg-indigo-500/10 transition-all duration-200"
           >
             Dashboard
           </Link>
         </div>
       </nav>
 
-      {/* ══════════════════════════════════
-          SECTION 1 — HERO
-      ══════════════════════════════════ */}
-      <section className="relative flex flex-col items-center justify-center min-h-screen px-6 text-center overflow-hidden">
+      {/* ══════════════════════════════════════════════════════════
+          HERO
+      ══════════════════════════════════════════════════════════ */}
+      <section className="relative flex flex-col items-center justify-center min-h-screen px-6 text-center overflow-hidden grain">
         {/* Ambient glow */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] rounded-full opacity-20" style={{ background: 'radial-gradient(ellipse, #6366f1 0%, transparent 70%)', filter: 'blur(60px)' }} />
+          <div
+            className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] rounded-full opacity-15"
+            style={{ background: 'radial-gradient(ellipse, #6366f1 0%, transparent 70%)', filter: 'blur(80px)' }}
+          />
         </div>
 
-        <div className="relative max-w-3xl mx-auto flex flex-col items-center gap-6 z-10">
-          <span className="hero-animate text-xs font-bold tracking-[0.2em] uppercase text-indigo-400" style={{ animationDelay: '0s' }}>
-            Personal AI Platform
-          </span>
+        <div className="relative max-w-3xl mx-auto flex flex-col items-center gap-7 z-10">
+          {/* Tool count chip */}
+          <div
+            className="hero-animate count-badge flex items-center gap-2 px-4 py-1.5 rounded-full border"
+            style={{
+              animationDelay: '0s',
+              background: 'rgba(99,102,241,0.06)',
+              borderColor: 'rgba(99,102,241,0.2)',
+            }}
+          >
+            <span className="font-mono text-xs font-medium text-indigo-400">7 tools</span>
+            <span className="text-zinc-700">·</span>
+            <span className="font-mono text-xs font-medium text-indigo-400">3 domains</span>
+            <span className="text-zinc-700">·</span>
+            <span className="font-mono text-xs font-medium text-emerald-400">all live</span>
+          </div>
 
-          <h1 className="hero-animate text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight" style={{ animationDelay: '0.1s' }}>
+          <h1
+            className="hero-animate font-display text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-[1.05] tracking-tight"
+            style={{ animationDelay: '0.1s' }}
+          >
             Your Tools Define{' '}
             <span className="gradient-text">Your AI</span>
           </h1>
 
-          <p className="hero-animate text-base font-medium text-zinc-400 tracking-wide" style={{ animationDelay: '0.2s' }}>
-            Built by <span className="text-white font-semibold">Karan Rajpal</span>
+          <p
+            className="hero-animate text-lg text-zinc-500 max-w-xl leading-relaxed"
+            style={{ animationDelay: '0.2s' }}
+          >
+            A platform where your tool usage — not forms or questionnaires — builds a model of who you are.
+          </p>
+
+          <p
+            className="hero-animate text-sm text-zinc-600"
+            style={{ animationDelay: '0.25s' }}
+          >
+            Built by <span className="text-zinc-300 font-medium">Karan Rajpal</span>
           </p>
 
           <Link
             to="/dashboard"
-            className="hero-animate mt-4 inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-8 py-4 rounded-xl text-base transition-all duration-200 shadow-2xl shadow-indigo-950/60 hover:shadow-indigo-900/60 hover:-translate-y-0.5"
-            style={{ animationDelay: '0.3s' }}
+            className="hero-animate mt-2 inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-8 py-4 rounded-xl text-sm transition-all duration-200 shadow-2xl shadow-indigo-950/60 hover:shadow-indigo-900/50 hover:-translate-y-0.5"
+            style={{ animationDelay: '0.35s' }}
           >
-            Explore Dashboard
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            Explore the Tools
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
           </Link>
         </div>
 
         {/* Scroll hint */}
-        <div className="hero-animate absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-zinc-600" style={{ animationDelay: '0.8s' }}>
-          <span className="text-xs tracking-widest uppercase">Scroll</span>
-          <svg className="w-4 h-4 animate-bounce" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        <div
+          className="hero-animate absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-zinc-700"
+          style={{ animationDelay: '0.9s' }}
+        >
+          <span className="text-[10px] tracking-[0.25em] uppercase font-mono">Scroll</span>
+          <svg className="w-3.5 h-3.5 animate-bounce" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
         </div>
       </section>
 
-      {/* ══════════════════════════════════
-          SECTION 2 — THE PROBLEM
-      ══════════════════════════════════ */}
-      <section className="relative flex flex-col items-center justify-center min-h-[70vh] px-6 py-32 text-center">
-        <div className="max-w-2xl mx-auto flex flex-col items-center gap-8">
-          <div className="reveal w-px h-16 bg-gradient-to-b from-transparent to-indigo-500/40" />
-          <h2 className="reveal text-3xl sm:text-4xl font-bold text-white leading-tight">
-            AI Shouldn't Need an Introduction
-          </h2>
-          <p className="reveal text-lg text-zinc-400 leading-relaxed" style={{ transitionDelay: '0.1s' }}>
-            Every AI app asks you to describe yourself. Fill out a profile. Tell it who you are. But identity
-            isn't a form — it's a pattern. It's what you search for at midnight, which risks you take, how you
-            think through decisions.
-          </p>
-        </div>
-      </section>
+      {/* ══════════════════════════════════════════════════════════
+          THE TOOLS — proof first
+      ══════════════════════════════════════════════════════════ */}
+      <section className="relative px-6 py-28 border-t" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+        <div className="max-w-5xl mx-auto">
 
-      {/* ══════════════════════════════════
-          SECTION 3 — THE THESIS
-      ══════════════════════════════════ */}
-      <section className="relative flex flex-col items-center justify-center min-h-[70vh] px-6 py-32 text-center border-t" style={{ borderColor: 'rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.015)' }}>
-        {/* Accent line */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-px" style={{ background: 'linear-gradient(90deg, transparent, #6366f1, transparent)' }} />
-
-        <div className="max-w-2xl mx-auto flex flex-col items-center gap-8">
-          <h2 className="reveal text-3xl sm:text-4xl font-bold text-white leading-tight">
-            What If AI Learned You by Working With You?
-          </h2>
-          <p className="reveal text-lg text-zinc-400 leading-relaxed" style={{ transitionDelay: '0.1s' }}>
-            What if your AI learned you the same way your closest colleagues do — not by asking, but by working
-            alongside you? You choose tools. You use them naturally. And over time, the platform builds a model
-            of how you think.
-          </p>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════
-          SECTION 4 — HOW IT WORKS
-      ══════════════════════════════════ */}
-      <section className="relative flex flex-col items-center justify-center min-h-[80vh] px-6 py-32 border-t" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-        <div className="max-w-5xl mx-auto w-full">
           <div className="reveal text-center mb-20">
-            <span className="text-xs font-bold tracking-[0.2em] uppercase text-indigo-400">Process</span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-white">How It Works</h2>
-            <p className="text-zinc-500 mt-3 text-base">Three steps. No configuration required.</p>
+            <span className="font-mono text-xs font-medium tracking-[0.2em] uppercase text-indigo-400">
+              Suite
+            </span>
+            <h2 className="font-display mt-3 text-3xl sm:text-4xl font-bold text-white">
+              The Tools
+            </h2>
+            <p className="text-zinc-600 mt-3 text-base max-w-md mx-auto">
+              Each one solves a real problem. Together, they reveal how you think.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-16">
+            {categoryOrder.map((cat) => {
+              const tools = grouped[cat]
+              if (!tools || tools.length === 0) return null
+              const meta = categoryMeta[cat]
+
+              return (
+                <div key={cat}>
+                  {/* Category header */}
+                  <div className="reveal flex items-center gap-4 mb-6">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-lg">{meta.emoji}</span>
+                      <h3 className="font-display text-base font-semibold text-white">
+                        {cat}
+                      </h3>
+                    </div>
+                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                    <span className="font-mono text-xs text-zinc-600">
+                      {tools.length} {tools.length === 1 ? 'tool' : 'tools'}
+                    </span>
+                  </div>
+
+                  {/* Tool grid */}
+                  <div className={`grid gap-4 ${tools.length === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}>
+                    {tools.map((tool) => {
+                      const idx = globalToolIndex++
+                      return <ToolCard key={tool.id} tool={tool} delay={idx} />
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          THE THESIS
+      ══════════════════════════════════════════════════════════ */}
+      <section
+        className="relative flex flex-col items-center justify-center min-h-[65vh] px-6 py-28 text-center border-t"
+        style={{ borderColor: 'rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.012)' }}
+      >
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-px" style={{ background: 'linear-gradient(90deg, transparent, #6366f1, transparent)' }} />
+
+        <div className="max-w-2xl mx-auto flex flex-col items-center gap-8">
+          <span className="reveal font-mono text-xs font-medium tracking-[0.2em] uppercase text-indigo-400">
+            Thesis
+          </span>
+          <h2 className="reveal font-display text-3xl sm:text-4xl font-bold text-white leading-tight">
+            Identity Is a Pattern,<br />Not a Profile
+          </h2>
+          <p className="reveal text-lg text-zinc-500 leading-relaxed" style={{ transitionDelay: '0.08s' }}>
+            Every AI product asks users to describe themselves — fill out a form, set preferences, answer questions.
+            But stated preferences are unreliable. What you actually reach for, how you reason through decisions,
+            which risks you take — that's the real signal.
+          </p>
+          <p className="reveal text-lg text-zinc-500 leading-relaxed" style={{ transitionDelay: '0.14s' }}>
+            This platform learns you by working alongside you.
+            No onboarding. No questionnaires. Just tools — and the patterns that emerge from using them.
+          </p>
+
+          <div
+            className="reveal flex items-center gap-3 mt-4 px-5 py-3 rounded-lg border"
+            style={{
+              transitionDelay: '0.2s',
+              background: 'rgba(99,102,241,0.04)',
+              borderColor: 'rgba(99,102,241,0.15)',
+            }}
+          >
+            <span className="font-mono text-sm text-indigo-400 font-medium">Revealed preferences</span>
+            <span className="text-zinc-600 font-mono text-sm">&gt;</span>
+            <span className="font-mono text-sm text-zinc-500">stated preferences</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          HOW IT WORKS
+      ══════════════════════════════════════════════════════════ */}
+      <section className="relative flex flex-col items-center justify-center px-6 py-28 border-t" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+        <div className="max-w-5xl mx-auto w-full">
+
+          <div className="reveal text-center mb-16">
+            <span className="font-mono text-xs font-medium tracking-[0.2em] uppercase text-indigo-400">Process</span>
+            <h2 className="font-display mt-3 text-3xl sm:text-4xl font-bold text-white">How It Works</h2>
+            <p className="text-zinc-600 mt-3 text-base">Three steps. No configuration.</p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0">
 
             {/* Step 1 */}
-            <div className="reveal flex-1 flex flex-col items-center text-center gap-5 px-6" style={{ transitionDelay: '0s' }}>
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl border" style={{ background: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.2)' }}>
-                🧰
+            <div className="reveal flex-1 flex flex-col items-center text-center gap-4 px-6">
+              <div
+                className="w-14 h-14 rounded-xl flex items-center justify-center border"
+                style={{ background: 'rgba(99,102,241,0.06)', borderColor: 'rgba(99,102,241,0.15)' }}
+              >
+                <span className="font-mono text-indigo-400 font-bold text-lg">01</span>
               </div>
               <div>
-                <span className="text-xs font-bold text-indigo-400 tracking-[0.15em] uppercase block mb-1.5">Step 1</span>
-                <h3 className="font-semibold text-white text-lg">Choose Your Tools</h3>
+                <h3 className="font-display font-semibold text-white text-base">Choose Your Tools</h3>
                 <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-                  Pick from a growing suite of AI-powered tools, each purpose-built for a domain that matters to you.
+                  Pick from 7 AI tools across finance, strategy, and career — each built for a domain that matters.
                 </p>
               </div>
             </div>
 
             {/* Connector */}
-            <div className="flex-shrink-0 self-center my-8 sm:my-0">
-              <div className="hidden sm:block w-12 h-px" style={{ background: 'linear-gradient(90deg, rgba(99,102,241,0.3), rgba(99,102,241,0.6), rgba(99,102,241,0.3))' }} />
-              <div className="sm:hidden w-px h-10 mx-auto" style={{ background: 'linear-gradient(180deg, rgba(99,102,241,0.3), rgba(99,102,241,0.6))' }} />
+            <div className="flex-shrink-0 self-center my-6 sm:my-0">
+              <div className="hidden sm:block w-12 h-px" style={{ background: 'linear-gradient(90deg, rgba(99,102,241,0.2), rgba(99,102,241,0.4), rgba(99,102,241,0.2))' }} />
+              <div className="sm:hidden w-px h-8 mx-auto" style={{ background: 'linear-gradient(180deg, rgba(99,102,241,0.2), rgba(99,102,241,0.4))' }} />
             </div>
 
             {/* Step 2 */}
-            <div className="reveal flex-1 flex flex-col items-center text-center gap-5 px-6" style={{ transitionDelay: '0.12s' }}>
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl border" style={{ background: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.2)' }}>
-                🔄
+            <div className="reveal flex-1 flex flex-col items-center text-center gap-4 px-6" style={{ transitionDelay: '0.1s' }}>
+              <div
+                className="w-14 h-14 rounded-xl flex items-center justify-center border"
+                style={{ background: 'rgba(99,102,241,0.06)', borderColor: 'rgba(99,102,241,0.15)' }}
+              >
+                <span className="font-mono text-indigo-400 font-bold text-lg">02</span>
               </div>
               <div>
-                <span className="text-xs font-bold text-indigo-400 tracking-[0.15em] uppercase block mb-1.5">Step 2</span>
-                <h3 className="font-semibold text-white text-lg">Use Them Naturally</h3>
+                <h3 className="font-display font-semibold text-white text-base">Use Them Naturally</h3>
                 <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-                  Just use the tools. No forms to fill, no profiles to build. Every search, every decision is a signal.
+                  No forms. No profiles. Every search, decision, and interaction is logged as a signal.
                 </p>
               </div>
             </div>
 
             {/* Connector */}
-            <div className="flex-shrink-0 self-center my-8 sm:my-0">
-              <div className="hidden sm:block w-12 h-px" style={{ background: 'linear-gradient(90deg, rgba(99,102,241,0.3), rgba(99,102,241,0.6), rgba(99,102,241,0.3))' }} />
-              <div className="sm:hidden w-px h-10 mx-auto" style={{ background: 'linear-gradient(180deg, rgba(99,102,241,0.3), rgba(99,102,241,0.6))' }} />
+            <div className="flex-shrink-0 self-center my-6 sm:my-0">
+              <div className="hidden sm:block w-12 h-px" style={{ background: 'linear-gradient(90deg, rgba(99,102,241,0.2), rgba(99,102,241,0.4), rgba(99,102,241,0.2))' }} />
+              <div className="sm:hidden w-px h-8 mx-auto" style={{ background: 'linear-gradient(180deg, rgba(99,102,241,0.2), rgba(99,102,241,0.4))' }} />
             </div>
 
             {/* Step 3 */}
-            <div className="reveal flex-1 flex flex-col items-center text-center gap-5 px-6" style={{ transitionDelay: '0.24s' }}>
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl border" style={{ background: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.2)' }}>
-                🧠
+            <div className="reveal flex-1 flex flex-col items-center text-center gap-4 px-6" style={{ transitionDelay: '0.2s' }}>
+              <div
+                className="w-14 h-14 rounded-xl flex items-center justify-center border"
+                style={{ background: 'rgba(99,102,241,0.06)', borderColor: 'rgba(99,102,241,0.15)' }}
+              >
+                <span className="font-mono text-indigo-400 font-bold text-lg">03</span>
               </div>
               <div>
-                <span className="text-xs font-bold text-indigo-400 tracking-[0.15em] uppercase block mb-1.5">Step 3</span>
-                <h3 className="font-semibold text-white text-lg">AI That Knows You</h3>
+                <h3 className="font-display font-semibold text-white text-base">AI That Knows You</h3>
                 <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-                  The platform builds a model of you — your goals, reasoning style, and values — so it helps you the way you actually think.
+                  The platform infers your interests, reasoning style, and priorities — so it helps the way you think.
                 </p>
               </div>
             </div>
-
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════
-          SECTION 5 — THE TOOLS
-      ══════════════════════════════════ */}
-      <section className="relative flex flex-col items-center justify-center min-h-[80vh] px-6 py-32 border-t" style={{ borderColor: 'rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.015)' }}>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-px" style={{ background: 'linear-gradient(90deg, transparent, #6366f1, transparent)' }} />
-
-        <div className="max-w-5xl mx-auto w-full">
-          <div className="reveal text-center mb-16">
-            <span className="text-xs font-bold tracking-[0.2em] uppercase text-indigo-400">Suite</span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-white">The Tools</h2>
-            <p className="text-zinc-500 mt-3 text-base">Built to make AI personal, one domain at a time.</p>
+      {/* ══════════════════════════════════════════════════════════
+          ARCHITECTURE
+      ══════════════════════════════════════════════════════════ */}
+      <section
+        className="relative flex flex-col items-center justify-center px-6 py-24 border-t"
+        style={{ borderColor: 'rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.012)' }}
+      >
+        <div className="max-w-3xl mx-auto w-full">
+          <div className="reveal text-center mb-12">
+            <span className="font-mono text-xs font-medium tracking-[0.2em] uppercase text-indigo-400">
+              Under the Hood
+            </span>
+            <h2 className="font-display mt-3 text-2xl sm:text-3xl font-bold text-white">
+              Tech Stack
+            </h2>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-5">
-
-            {/* Robo Advisor — Live */}
-            <Link
-              to="/tools/robo-advisor"
-              className="reveal group relative flex flex-col gap-5 p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1"
-              style={{
-                background: 'rgba(255,255,255,0.03)',
-                borderColor: 'rgba(255,255,255,0.08)',
-                transitionDelay: '0s',
-              }}
-            >
-              {/* Hover glow */}
-              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" style={{ boxShadow: '0 0 0 1px rgba(99,102,241,0.4), 0 0 40px rgba(99,102,241,0.08)' }} />
-
-              <div className="flex items-start justify-between">
-                <span className="text-3xl">📈</span>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full border" style={{ background: 'rgba(16,185,129,0.08)', color: '#34d399', borderColor: 'rgba(16,185,129,0.2)' }}>
-                  Live
-                </span>
-              </div>
-              <div className="flex flex-col gap-2 flex-1">
-                <h3 className="font-semibold text-white text-base group-hover:text-indigo-300 transition-colors">
-                  Robo Advisor
-                </h3>
-                <p className="text-zinc-500 text-sm leading-relaxed">
-                  AI-powered investment guidance. Multi-agent LLM system with Black-Litterman portfolio optimization.
-                </p>
-              </div>
-              <span className="text-xs text-zinc-600 group-hover:text-indigo-400 transition-colors flex items-center gap-1">
-                Open
-                <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          <div className="reveal flex flex-wrap justify-center gap-2.5">
+            {[
+              'React', 'TypeScript', 'Python', 'Claude API', 'LangGraph',
+              'Firebase', 'Supabase', 'Streamlit', 'Vercel', 'Tailwind CSS',
+            ].map((tech) => (
+              <span
+                key={tech}
+                className="font-mono text-xs px-3 py-1.5 rounded-md border text-zinc-400"
+                style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)' }}
+              >
+                {tech}
               </span>
-            </Link>
-
-            {/* Career Tool — Live */}
-            <Link
-              to="/tools/arkanex"
-              className="reveal group relative flex flex-col gap-5 p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1"
-              style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)', transitionDelay: '0.1s' }}
-            >
-              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" style={{ boxShadow: '0 0 0 1px rgba(99,102,241,0.4), 0 0 40px rgba(99,102,241,0.08)' }} />
-              <div className="flex items-start justify-between">
-                <span className="text-3xl">💼</span>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full border" style={{ background: 'rgba(16,185,129,0.08)', color: '#34d399', borderColor: 'rgba(16,185,129,0.2)' }}>
-                  Live
-                </span>
-              </div>
-              <div className="flex flex-col gap-2 flex-1">
-                <h3 className="font-semibold text-white text-base group-hover:text-indigo-300 transition-colors">
-                  Career Tool
-                </h3>
-                <p className="text-zinc-500 text-sm leading-relaxed">
-                  AI-powered interview question generator for strategic roles. Practice with tailored questions for your target position.
-                </p>
-              </div>
-              <span className="text-xs text-zinc-600 group-hover:text-indigo-400 transition-colors flex items-center gap-1">
-                Open
-                <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-              </span>
-            </Link>
-
-            {/* Markets Tool — Live */}
-            <Link
-              to="/tools/equity-research"
-              className="reveal group relative flex flex-col gap-5 p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1"
-              style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)', transitionDelay: '0.2s' }}
-            >
-              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" style={{ boxShadow: '0 0 0 1px rgba(99,102,241,0.4), 0 0 40px rgba(99,102,241,0.08)' }} />
-              <div className="flex items-start justify-between">
-                <span className="text-3xl">🌐</span>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full border" style={{ background: 'rgba(16,185,129,0.08)', color: '#34d399', borderColor: 'rgba(16,185,129,0.2)' }}>
-                  Live
-                </span>
-              </div>
-              <div className="flex flex-col gap-2 flex-1">
-                <h3 className="font-semibold text-white text-base group-hover:text-indigo-300 transition-colors">
-                  Markets Tool
-                </h3>
-                <p className="text-zinc-500 text-sm leading-relaxed">
-                  Real-time market intelligence with AI-driven summaries and trend analysis.
-                </p>
-              </div>
-              <span className="text-xs text-zinc-600 group-hover:text-indigo-400 transition-colors flex items-center gap-1">
-                Open
-                <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-              </span>
-            </Link>
-
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════
-          SECTION 6 — WHO BUILT THIS
-      ══════════════════════════════════ */}
-      <section className="relative flex flex-col items-center justify-center min-h-[80vh] px-6 py-32 text-center border-t" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+      {/* ══════════════════════════════════════════════════════════
+          WHO BUILT THIS
+      ══════════════════════════════════════════════════════════ */}
+      <section className="relative flex flex-col items-center justify-center min-h-[70vh] px-6 py-28 text-center border-t" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
         {/* Ambient glow */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] opacity-10" style={{ background: 'radial-gradient(ellipse, #818cf8 0%, transparent 70%)', filter: 'blur(50px)' }} />
+          <div
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[400px] h-[250px] opacity-8"
+            style={{ background: 'radial-gradient(ellipse, #818cf8 0%, transparent 70%)', filter: 'blur(50px)' }}
+          />
         </div>
 
-        <div className="relative max-w-2xl mx-auto flex flex-col items-center gap-10 z-10">
+        <div className="relative max-w-2xl mx-auto flex flex-col items-center gap-8 z-10">
 
           <div className="reveal flex flex-col items-center gap-2">
-            <span className="text-xs font-bold tracking-[0.2em] uppercase text-indigo-400">Builder</span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white">Who Built This</h2>
+            <span className="font-mono text-xs font-medium tracking-[0.2em] uppercase text-indigo-400">Builder</span>
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-white">Who Built This</h2>
           </div>
 
-          <div className="reveal text-5xl sm:text-6xl font-extrabold tracking-tight" style={{ transitionDelay: '0.05s' }}>
+          <div className="reveal font-display text-4xl sm:text-5xl font-extrabold tracking-tight" style={{ transitionDelay: '0.05s' }}>
             <span className="gradient-text">Karan Rajpal</span>
           </div>
 
           {/* Credential chips */}
-          <div className="reveal flex flex-wrap items-center justify-center gap-2.5" style={{ transitionDelay: '0.1s' }}>
+          <div className="reveal flex flex-wrap items-center justify-center gap-2" style={{ transitionDelay: '0.1s' }}>
             {[
               'Berkeley Haas MBA',
               'Borderless Capital',
-              'KAUST Investment Management Company',
+              'KAUST Investment Management',
               'Handshake AI',
             ].map((chip) => (
               <span
                 key={chip}
-                className="text-xs font-medium px-3 py-1.5 rounded-full border text-zinc-300"
-                style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
+                className="text-xs font-medium px-3 py-1.5 rounded-full border text-zinc-400"
+                style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)' }}
               >
                 {chip}
               </span>
             ))}
           </div>
 
-          <p className="reveal text-base text-zinc-400" style={{ transitionDelay: '0.15s' }}>
+          <p className="reveal text-base text-zinc-500 max-w-md" style={{ transitionDelay: '0.15s' }}>
             I build at the intersection of finance, operations, and AI.
           </p>
 
@@ -366,7 +453,7 @@ export default function Landing() {
               className="group flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors duration-200"
               aria-label="GitHub"
             >
-              <GitHubIcon className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
+              <GitHubIcon className="w-4.5 h-4.5 group-hover:scale-110 transition-transform duration-200" />
               <span>GitHub</span>
             </a>
             <div className="w-px h-4 bg-zinc-800" />
@@ -377,7 +464,7 @@ export default function Landing() {
               className="group flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors duration-200"
               aria-label="LinkedIn"
             >
-              <LinkedInIcon className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
+              <LinkedInIcon className="w-4.5 h-4.5 group-hover:scale-110 transition-transform duration-200" />
               <span>LinkedIn</span>
             </a>
             <div className="w-px h-4 bg-zinc-800" />
@@ -386,42 +473,29 @@ export default function Landing() {
               className="group flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors duration-200"
               aria-label="Email"
             >
-              <MailIcon className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
+              <MailIcon className="w-4.5 h-4.5 group-hover:scale-110 transition-transform duration-200" />
               <span>Email</span>
             </a>
           </div>
-
         </div>
       </section>
 
-      {/* ══════════════════════════════════
-          SECTION 7 — FOOTER
-      ══════════════════════════════════ */}
-      <footer className="border-t py-8 px-6 sm:px-10" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+      {/* ══════════════════════════════════════════════════════════
+          FOOTER
+      ══════════════════════════════════════════════════════════ */}
+      <footer className="border-t py-8 px-6 sm:px-10" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="text-sm" style={{ color: '#3f3f46' }}>
+          <span className="text-sm text-zinc-700">
             Personal AI Platform &copy; 2026
           </span>
           <div className="flex items-center gap-4 text-sm text-zinc-600">
             <span>
               Built by <span className="text-zinc-400 font-medium">Karan Rajpal</span>
             </span>
-            <a
-              href="https://github.com/AAP67"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-zinc-300 transition-colors"
-              aria-label="GitHub"
-            >
+            <a href="https://github.com/AAP67" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300 transition-colors" aria-label="GitHub">
               <GitHubIcon className="w-4 h-4" />
             </a>
-            <a
-              href="https://www.linkedin.com/in/krajpal/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-zinc-300 transition-colors"
-              aria-label="LinkedIn"
-            >
+            <a href="https://www.linkedin.com/in/krajpal/" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300 transition-colors" aria-label="LinkedIn">
               <LinkedInIcon className="w-4 h-4" />
             </a>
           </div>

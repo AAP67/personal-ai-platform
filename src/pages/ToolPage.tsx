@@ -11,6 +11,10 @@ const toolComponents: Record<string, LazyExoticComponent<() => ReactNode>> = {
   'robo-advisor': lazy(() => import('../tools/robo-advisor/index')),
   'equity-research': lazy(() => import('../tools/equity-research/index')),
   'arkanex': lazy(() => import('../tools/arkanex/index')),
+  'deal-sourcing': lazy(() => import('../tools/deal-sourcing/index')),
+  'ai-chief-of-staff': lazy(() => import('../tools/ai-chief-of-staff/index')),
+  'ai-consultant': lazy(() => import('../tools/ai-consultant/index')),
+  'finance-tutor': lazy(() => import('../tools/finance-tutor/index')),
 }
 
 function StandardShell({ children }: { children: ReactNode }) {
