@@ -3,10 +3,12 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../contexts/AuthContext'
 
-export type ActionType = 'tool_open' | 'tool_close' | 'session_start'
+export type ActionType = 'tool_open' | 'tool_close' | 'session_start' | 'tool_signal'
 
 // Stable session ID for the lifetime of the tab
 const SESSION_ID = crypto.randomUUID()
+
+export { SESSION_ID }
 
 export interface InteractionPayload {
   userId: string
@@ -16,6 +18,8 @@ export interface InteractionPayload {
   actionType: ActionType
   sessionId: string
   duration?: number // seconds, only for tool_close
+  signal?: string // signal event name, only for tool_signal
+  signalData?: Record<string, unknown> // structured data from the tool
 }
 
 export async function writeInteraction(payload: InteractionPayload): Promise<void> {
@@ -33,10 +37,8 @@ export async function writeInteraction(payload: InteractionPayload): Promise<voi
 export function useLogInteraction(toolId: string, toolName: string) {
   const { user } = useAuth()
 
-  // Keep a ref so the effect cleanup always sees the latest version
-  // without adding it to useEffect dependency arrays
   const logInteraction = useCallback(
-    (actionType: ActionType, duration?: number) => {
+    (actionType: ActionType, durationOrSignal?: number | string, signalData?: Record<string, unknown>) => {
       if (!user) return
       writeInteraction({
         userId: user.uid,
@@ -45,7 +47,9 @@ export function useLogInteraction(toolId: string, toolName: string) {
         toolName,
         actionType,
         sessionId: SESSION_ID,
-        ...(duration !== undefined ? { duration } : {}),
+        ...(typeof durationOrSignal === 'number' ? { duration: durationOrSignal } : {}),
+        ...(typeof durationOrSignal === 'string' ? { signal: durationOrSignal } : {}),
+        ...(signalData ? { signalData } : {}),
       })
     },
     [user, toolId, toolName],

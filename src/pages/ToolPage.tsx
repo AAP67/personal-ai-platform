@@ -64,6 +64,24 @@ export default function ToolPage() {
     }
   }, [tool?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Listen for signals from iframe tools via postMessage
+  useEffect(() => {
+    if (!tool) return
+
+    function handleMessage(event: MessageEvent) {
+      const msg = event.data
+      if (!msg || msg.type !== 'francium_signal') return
+      // Only accept signals from the current tool
+      if (msg.toolId !== tool.id) return
+
+      console.log('[Francium] signal received:', msg.event, msg.data)
+      logRef.current('tool_signal', msg.event, msg.data)
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [tool?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!tool || !tool.enabled) {
     return <Navigate to="/dashboard" replace />
   }
