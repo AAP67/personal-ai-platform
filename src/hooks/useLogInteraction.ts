@@ -24,13 +24,12 @@ export interface InteractionPayload {
 
 export async function writeInteraction(payload: InteractionPayload): Promise<void> {
   try {
-    // Strip undefined values — Firestore rejects them
-    const clean = JSON.parse(JSON.stringify(payload))
     await addDoc(collection(db, 'interactions'), {
-      ...clean,
+      ...payload,
       timestamp: serverTimestamp(),
     })
   } catch (err) {
+    // Never crash the UI over a logging failure
     console.warn('[logInteraction] write failed', err)
   }
 }

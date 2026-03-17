@@ -72,7 +72,7 @@ export default function ToolPage() {
       const msg = event.data
       if (!msg || msg.type !== 'francium_signal') return
       // Only accept signals from the current tool
-      if (msg.toolId !== tool?.id) return
+      if (msg.toolId !== tool.id) return
 
       console.log('[Francium] signal received:', msg.event, msg.data)
       logRef.current('tool_signal', msg.event, msg.data)

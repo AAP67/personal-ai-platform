@@ -4,126 +4,147 @@ import { collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../contexts/AuthContext'
 
-interface Interaction {
+interface SignalDoc {
   toolId: string
   toolName: string
+  signal: string
+  signalData: Record<string, unknown>
   actionType: string
-  sessionId: string
   timestamp: { seconds: number } | null
 }
 
-interface Stats {
-  totalSessions: number
-  uniqueTools: number
-  mostUsedTool: string | null
-  lastActive: Date | null
-  toolOpenCounts: Record<string, { name: string; count: number }>
+interface Dimension {
+  name: string
+  value: string
+  confidence: 'low' | 'medium' | 'high'
+  evidence: string
 }
 
-const TOOL_INSIGHTS: Record<string, string[]> = {
-  'robo-advisor': ['Investment Strategy', 'Portfolio Optimization', 'Risk Analysis'],
-  'equity-research': ['Equity Research', 'Market Analysis', 'Financial Modeling'],
-  'deal-sourcing': ['Deal Flow', 'Venture Capital', 'Due Diligence'],
-  'ai-chief-of-staff': ['Strategic Planning', 'Decision Frameworks', 'Prioritization'],
-  'ai-consultant': ['Strategy & Operations', 'Business Analysis', 'Advisory'],
-  'arkanex': ['Career Development', 'Interview Prep', 'Strategic Roles'],
-  'finance-tutor': ['Finance Education', 'GMAT/CFA Prep', 'Quantitative Skills'],
+interface Persona {
+  summary: string
+  dimensions: Dimension[]
+  system_prompt: string
 }
 
-function computeStats(interactions: Interaction[]): Stats {
-  const opens = interactions.filter((i) => i.actionType === 'tool_open' && i.toolId !== 'dashboard')
-  const sessions = interactions.filter((i) => i.actionType === 'session_start')
-
-  const toolOpenCounts: Record<string, { name: string; count: number }> = {}
-  for (const i of opens) {
-    if (!toolOpenCounts[i.toolId]) {
-      toolOpenCounts[i.toolId] = { name: i.toolName, count: 0 }
-    }
-    toolOpenCounts[i.toolId].count++
-  }
-
-  const uniqueTools = Object.keys(toolOpenCounts).length
-
-  let mostUsedTool: string | null = null
-  let maxCount = 0
-  for (const [id, { count }] of Object.entries(toolOpenCounts)) {
-    if (count > maxCount) { maxCount = count; mostUsedTool = id }
-  }
-
-  const allTimestamps = interactions
-    .filter((i) => i.timestamp)
-    .map((i) => new Date((i.timestamp!.seconds) * 1000))
-  const lastActive = allTimestamps.length > 0
-    ? new Date(Math.max(...allTimestamps.map((d) => d.getTime())))
-    : null
-
-  return { totalSessions: sessions.length, uniqueTools, mostUsedTool, lastActive, toolOpenCounts }
-}
-
-function formatDate(d: Date): string {
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
-
-function StatCard({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div
-      className="flex flex-col gap-1 p-5 rounded-xl border"
-      style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.07)' }}
-    >
-      <span className="text-xs font-semibold tracking-widest uppercase text-zinc-500">{label}</span>
-      <span className="text-2xl font-bold text-white">{value}</span>
-    </div>
-  )
-}
+const MIN_SIGNALS = 5
+const MIN_TOOLS = 2
 
 export default function Profile() {
   const { user } = useAuth()
-  const [stats, setStats] = useState<Stats | null>(null)
+  const [signals, setSignals] = useState<SignalDoc[]>([])
   const [loading, setLoading] = useState(true)
+  const [persona, setPersona] = useState<Persona | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const [error, setError] = useState('')
+  const [copied, setCopied] = useState(false)
 
+  // Fetch signals from Firestore
   useEffect(() => {
     if (!user) return
-    async function fetchInteractions() {
+    async function fetchSignals() {
       try {
         const q = query(
           collection(db, 'interactions'),
           where('userId', '==', user!.uid),
+          where('actionType', '==', 'tool_signal'),
         )
         const snap = await getDocs(q)
-        const docs = snap.docs.map((d) => d.data() as Interaction)
-        setStats(computeStats(docs))
+        const docs = snap.docs.map((d) => d.data() as SignalDoc)
+        setSignals(docs)
       } catch (err) {
         console.warn('[Profile] fetch failed', err)
-        setStats(computeStats([]))
       } finally {
         setLoading(false)
       }
     }
-    fetchInteractions()
+    fetchSignals()
   }, [user])
 
-  // Derive insight tags from the top tools by open count
-  const insightTags: string[] = []
-  if (stats) {
-    const sorted = Object.entries(stats.toolOpenCounts).sort((a, b) => b[1].count - a[1].count)
-    for (const [toolId] of sorted) {
-      const tags = TOOL_INSIGHTS[toolId] ?? []
-      for (const tag of tags) {
-        if (!insightTags.includes(tag)) insightTags.push(tag)
+  // Compute thresholds
+  const signalCount = signals.length
+  const uniqueTools = new Set(signals.map((s) => s.toolId)).size
+  const meetsThreshold = signalCount >= MIN_SIGNALS && uniqueTools >= MIN_TOOLS
+  const progress = Math.min(signalCount / MIN_SIGNALS, 1)
+
+  // Generate persona
+  async function generatePersona() {
+    if (!meetsThreshold) return
+    setGenerating(true)
+    setError('')
+    try {
+      const res = await fetch('/api/persona', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signals: signals.map((s) => ({
+            toolId: s.toolId,
+            signal: s.signal,
+            signalData: s.signalData,
+          })),
+        }),
+      })
+      const data = await res.json()
+      if (data.error) {
+        setError(data.error)
+      } else {
+        setPersona(data.persona)
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate persona')
+    } finally {
+      setGenerating(false)
     }
   }
 
-  const maxCount = stats
-    ? Math.max(...Object.values(stats.toolOpenCounts).map((t) => t.count), 1)
-    : 1
+  // Export as markdown
+  function exportMarkdown(): string {
+    if (!persona) return ''
+    let md = `# My AI Persona\n\n`
+    md += `> ${persona.summary}\n\n`
+    md += `## Dimensions\n\n`
+    for (const d of persona.dimensions) {
+      md += `### ${d.name}\n`
+      md += `**${d.value}** (${d.confidence} confidence)\n`
+      md += `${d.evidence}\n\n`
+    }
+    md += `## System Prompt\n\n`
+    md += `\`\`\`\n${persona.system_prompt}\n\`\`\`\n\n`
+    md += `---\n*Generated by Francium — ${new Date().toLocaleDateString()}*\n`
+    return md
+  }
+
+  // Copy system prompt
+  async function copySystemPrompt() {
+    if (!persona) return
+    await navigator.clipboard.writeText(persona.system_prompt)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  // Download .md file
+  function downloadMarkdown() {
+    const md = exportMarkdown()
+    const blob = new Blob([md], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `francium-persona-${new Date().toISOString().slice(0, 10)}.md`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const confidenceColor: Record<string, string> = {
+    low: '#f59e0b',
+    medium: '#6366f1',
+    high: '#10b981',
+  }
 
   return (
-    <div className="min-h-screen text-white" style={{ background: '#0a0a0f' }}>
+    <div className="min-h-screen text-white font-body" style={{ background: '#08080d' }}>
       {/* Nav */}
       <nav
         className="sticky top-0 z-50 px-8 py-4 flex items-center justify-between border-b backdrop-blur-md"
-        style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(10,10,15,0.85)' }}
+        style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(8,8,13,0.85)' }}
       >
         <Link to="/dashboard" className="text-sm text-zinc-400 hover:text-white transition-colors">
           ← Dashboard
@@ -131,118 +152,262 @@ export default function Profile() {
         <span className="text-sm text-zinc-500">{user?.email}</span>
       </nav>
 
-      <main className="max-w-3xl mx-auto px-6 py-16 flex flex-col gap-16">
+      <main className="max-w-2xl mx-auto px-6 py-16 flex flex-col gap-12">
 
         {/* Header */}
-        <header className="hero-animate flex flex-col gap-2" style={{ animationDelay: '0s' }}>
-          <h1 className="text-4xl font-extrabold tracking-tight text-white">Your AI Profile</h1>
-          <p className="text-zinc-500 text-base">Built from how you use your tools.</p>
+        <header>
+          <h1 className="font-display text-3xl font-extrabold tracking-tight text-white">
+            Your AI Persona
+          </h1>
+          <p className="text-zinc-500 text-sm mt-2">
+            Built from how you use your tools. Not from what you tell us.
+          </p>
         </header>
 
         {loading ? (
           <div className="flex items-center justify-center py-24">
-            <span className="text-zinc-600 animate-pulse text-sm">Loading your profile…</span>
+            <span className="text-zinc-600 animate-pulse text-sm">Loading signals…</span>
+          </div>
+        ) : !meetsThreshold ? (
+          /* ── THRESHOLD NOT MET ── */
+          <div className="flex flex-col gap-8">
+            {/* Progress card */}
+            <div
+              className="rounded-xl border p-6 flex flex-col gap-5"
+              style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.07)' }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-xs text-zinc-500 uppercase tracking-wider">
+                  Persona Progress
+                </span>
+                <span className="font-mono text-xs text-indigo-400">
+                  {signalCount}/{MIN_SIGNALS} signals · {uniqueTools}/{MIN_TOOLS} tools
+                </span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{
+                    width: `${progress * 100}%`,
+                    background: 'linear-gradient(90deg, #6366f1, #a78bfa)',
+                  }}
+                />
+              </div>
+
+              <p className="text-sm text-zinc-500 leading-relaxed">
+                {signalCount < MIN_SIGNALS && uniqueTools < MIN_TOOLS
+                  ? `Use ${MIN_SIGNALS - signalCount} more tools with meaningful actions across ${MIN_TOOLS - uniqueTools} more tool categories to unlock your persona.`
+                  : signalCount < MIN_SIGNALS
+                  ? `${MIN_SIGNALS - signalCount} more meaningful actions needed. Keep using the tools.`
+                  : `You need to use at least ${MIN_TOOLS} different tools. Try a tool you haven't used yet.`
+                }
+              </p>
+            </div>
+
+            {/* Signal log */}
+            {signalCount > 0 && (
+              <div className="flex flex-col gap-3">
+                <span className="font-mono text-[10px] text-zinc-600 uppercase tracking-wider">
+                  Signals Collected
+                </span>
+                <div className="flex flex-col gap-1.5">
+                  {signals.slice(0, 8).map((s, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between px-3 py-2 rounded-lg border"
+                      style={{ background: 'rgba(255,255,255,0.015)', borderColor: 'rgba(255,255,255,0.05)' }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[10px] text-indigo-400">{s.toolId}</span>
+                        <span className="text-zinc-700">·</span>
+                        <span className="font-mono text-[10px] text-zinc-500">{s.signal}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {signals.length > 8 && (
+                    <span className="font-mono text-[10px] text-zinc-700 pl-3">
+                      +{signals.length - 8} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
-          <>
-            {/* Section 1 — Activity Summary */}
-            <section className="hero-animate flex flex-col gap-6" style={{ animationDelay: '0.08s' }}>
-              <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-semibold text-white">Activity Summary</h2>
-                <p className="text-zinc-600 text-sm">Your usage at a glance.</p>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <StatCard label="Sessions" value={stats?.totalSessions ?? 0} />
-                <StatCard label="Tools Used" value={stats?.uniqueTools ?? 0} />
-                <StatCard
-                  label="Top Tool"
-                  value={
-                    stats?.mostUsedTool
-                      ? (stats.toolOpenCounts[stats.mostUsedTool]?.name ?? '—')
-                      : '—'
-                  }
-                />
-                <StatCard
-                  label="Last Active"
-                  value={stats?.lastActive ? formatDate(stats.lastActive) : '—'}
-                />
-              </div>
-            </section>
+          /* ── THRESHOLD MET ── */
+          <div className="flex flex-col gap-8">
 
-            {/* Section 2 — Tool Usage */}
-            <section className="hero-animate flex flex-col gap-6" style={{ animationDelay: '0.14s' }}>
-              <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-semibold text-white">Tool Usage</h2>
-                <p className="text-zinc-600 text-sm">How often you've opened each tool.</p>
-              </div>
-
-              {Object.keys(stats?.toolOpenCounts ?? {}).length === 0 ? (
-                <p className="text-zinc-600 text-sm">No tool opens recorded yet. Start using a tool to see data here.</p>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {Object.entries(stats!.toolOpenCounts)
-                    .sort((a, b) => b[1].count - a[1].count)
-                    .map(([toolId, { name, count }]) => (
-                      <div key={toolId} className="flex flex-col gap-1.5">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-zinc-300 font-medium">{name}</span>
-                          <span className="text-zinc-500 tabular-nums">{count} {count === 1 ? 'open' : 'opens'}</span>
-                        </div>
-                        <div
-                          className="h-1.5 rounded-full overflow-hidden"
-                          style={{ background: 'rgba(255,255,255,0.05)' }}
-                        >
-                          <div
-                            className="h-full rounded-full transition-all duration-700"
-                            style={{
-                              width: `${(count / maxCount) * 100}%`,
-                              background: 'linear-gradient(90deg, #6366f1, #a78bfa)',
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
+            {/* Generate button (if no persona yet) */}
+            {!persona && !generating && (
+              <div
+                className="rounded-xl border p-6 flex flex-col items-center gap-4 text-center"
+                style={{ background: 'rgba(99,102,241,0.04)', borderColor: 'rgba(99,102,241,0.15)' }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-xs text-emerald-400">✓ {signalCount} signals</span>
+                  <span className="text-zinc-700">·</span>
+                  <span className="font-mono text-xs text-emerald-400">✓ {uniqueTools} tools</span>
                 </div>
-              )}
-            </section>
-
-            {/* Section 3 — What We Know */}
-            <section className="hero-animate flex flex-col gap-6" style={{ animationDelay: '0.2s' }}>
-              <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-semibold text-white">What We Know</h2>
-                <p className="text-zinc-600 text-sm">Interests inferred from your tool usage.</p>
+                <p className="text-sm text-zinc-400">
+                  Enough data to build your persona. Ready to generate?
+                </p>
+                <button
+                  onClick={generatePersona}
+                  className="px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5"
+                  style={{
+                    background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                    color: 'white',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Generate My Persona
+                </button>
               </div>
+            )}
 
-              {insightTags.length === 0 ? (
-                <p className="text-zinc-600 text-sm">Use a few tools to start building your interest profile.</p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {insightTags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-sm font-medium px-3 py-1.5 rounded-full border text-indigo-300"
-                      style={{ background: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.2)' }}
+            {/* Generating spinner */}
+            {generating && (
+              <div className="flex flex-col items-center gap-4 py-12">
+                <div
+                  className="w-8 h-8 rounded-full border-2 border-t-indigo-400 animate-spin"
+                  style={{ borderColor: 'rgba(255,255,255,0.1)', borderTopColor: '#818cf8' }}
+                />
+                <p className="text-sm text-zinc-500">Analyzing {signalCount} signals across {uniqueTools} tools…</p>
+              </div>
+            )}
+
+            {/* Error */}
+            {error && (
+              <div
+                className="rounded-lg border px-4 py-3 text-sm"
+                style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.2)', color: '#f87171' }}
+              >
+                {error}
+              </div>
+            )}
+
+            {/* Persona display */}
+            {persona && (
+              <div className="flex flex-col gap-8">
+
+                {/* Summary */}
+                <div
+                  className="rounded-xl border p-6"
+                  style={{ background: 'rgba(99,102,241,0.04)', borderColor: 'rgba(99,102,241,0.15)' }}
+                >
+                  <span className="font-mono text-[10px] text-indigo-400 uppercase tracking-wider block mb-3">
+                    Summary
+                  </span>
+                  <p className="text-base text-zinc-300 leading-relaxed">
+                    {persona.summary}
+                  </p>
+                </div>
+
+                {/* Dimensions */}
+                <div className="flex flex-col gap-3">
+                  <span className="font-mono text-[10px] text-zinc-600 uppercase tracking-wider">
+                    Dimensions
+                  </span>
+                  {persona.dimensions.map((d, i) => (
+                    <div
+                      key={i}
+                      className="rounded-lg border p-4 flex flex-col gap-2"
+                      style={{
+                        background: 'rgba(255,255,255,0.02)',
+                        borderColor: 'rgba(255,255,255,0.06)',
+                        borderLeftWidth: '3px',
+                        borderLeftColor: confidenceColor[d.confidence] || '#6366f1',
+                      }}
                     >
-                      {tag}
-                    </span>
+                      <div className="flex items-center justify-between">
+                        <span className="font-display text-sm font-semibold text-white">
+                          {d.name}
+                        </span>
+                        <span
+                          className="font-mono text-[10px] px-2 py-0.5 rounded"
+                          style={{
+                            background: `${confidenceColor[d.confidence]}15`,
+                            color: confidenceColor[d.confidence],
+                          }}
+                        >
+                          {d.confidence}
+                        </span>
+                      </div>
+                      <p className="text-sm text-zinc-300">{d.value}</p>
+                      <p className="text-xs text-zinc-600">{d.evidence}</p>
+                    </div>
                   ))}
                 </div>
-              )}
-            </section>
 
-            {/* Section 4 — Footer note */}
-            <section
-              className="hero-animate rounded-xl border p-6 text-sm text-zinc-500 leading-relaxed"
-              style={{
-                animationDelay: '0.26s',
-                background: 'rgba(255,255,255,0.02)',
-                borderColor: 'rgba(255,255,255,0.06)',
-              }}
-            >
-              This profile is built entirely from your tool usage — no forms, no questionnaires.
-              As you use more tools, your AI gets smarter.
-            </section>
-          </>
+                {/* System Prompt */}
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[10px] text-zinc-600 uppercase tracking-wider">
+                      Portable Persona — paste into any AI
+                    </span>
+                  </div>
+                  <div
+                    className="rounded-lg border p-4"
+                    style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}
+                  >
+                    <p className="font-mono text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap">
+                      {persona.system_prompt}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Export buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={copySystemPrompt}
+                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 border"
+                    style={{
+                      background: copied ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.02)',
+                      borderColor: copied ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)',
+                      color: copied ? '#34d399' : '#a1a1aa',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {copied ? '✓ Copied!' : 'Copy System Prompt'}
+                  </button>
+                  <button
+                    onClick={downloadMarkdown}
+                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 border"
+                    style={{
+                      background: 'rgba(99,102,241,0.08)',
+                      borderColor: 'rgba(99,102,241,0.2)',
+                      color: '#818cf8',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Download .md
+                  </button>
+                </div>
+
+                {/* Regenerate */}
+                <button
+                  onClick={generatePersona}
+                  className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors self-center"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  Regenerate persona
+                </button>
+
+                {/* Signal count footer */}
+                <div
+                  className="rounded-lg border px-4 py-3 text-center"
+                  style={{ background: 'rgba(255,255,255,0.015)', borderColor: 'rgba(255,255,255,0.05)' }}
+                >
+                  <span className="font-mono text-[10px] text-zinc-600">
+                    Built from {signalCount} signals across {uniqueTools} tools · {new Date().toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </main>
     </div>
