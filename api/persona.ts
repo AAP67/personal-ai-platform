@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-export const config = { runtime: 'nodejs20.x' };
+export const config = { runtime: 'nodejs' };
 
 const PERSONA_PROMPT = `You are a behavioral analyst. Given the following tool usage signals from a platform where users interact with AI-powered tools, infer a structured persona.
 
