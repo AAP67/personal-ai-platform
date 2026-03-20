@@ -168,7 +168,7 @@ export default function Landing() {
                 }}
               />
               <span className="font-mono text-xs text-indigo-300 font-semibold relative">revealed preferences</span>
-              <span className="text-indigo-500/60 font-mono text-xs font-bold relative">&gt;</span>
+              <span className="text-indigo-500/60 font-mono text-lg font-bold relative">&gt;</span>
               <span className="font-mono text-xs text-zinc-500 relative">stated preferences</span>
             </div>
           </div>
@@ -185,7 +185,7 @@ export default function Landing() {
               {[
                 'Berkeley Haas MBA',
                 'Borderless Capital',
-                'KAUST Investment',
+                'KAUST Investments',
                 'Handshake AI',
               ].map((chip) => (
                 <span
