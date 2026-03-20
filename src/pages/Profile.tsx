@@ -217,9 +217,9 @@ export default function Profile() {
             r: {
               min: 0, max: 100,
               ticks: { display: false, stepSize: 25 },
-              grid: { color: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
-              angleLines: { color: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
-              pointLabels: { color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)', font: { size: 11 } },
+              grid: { color: 'rgba(255,255,255,0.15)' },
+              angleLines: { color: 'rgba(255,255,255,0.15)' },
+              pointLabels: { color: 'rgba(255,255,255,0.7)', font: { size: 12 } },
             }
           },
           animation: { duration: 600, easing: 'easeInOutCubic' },
