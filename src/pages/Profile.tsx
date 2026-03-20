@@ -176,8 +176,6 @@ export default function Profile() {
 
       const Chart = (window as any).Chart
       const labels = scores.dimensions.map(d => d.name)
-      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-
       const datasets: any[] = []
 
       // If we have past snapshots, show ghosted previous shapes
