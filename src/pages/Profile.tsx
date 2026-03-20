@@ -6,7 +6,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../contexts/AuthContext'
-import { computePersonaScores, type Signal, type PersonaScores, type DimensionScore } from '../lib/computeScores'
+import { type PersonaScores } from '../lib/computeScores'
 
 /* ─── Types ────────────────────────────────────────────────── */
 
