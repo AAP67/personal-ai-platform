@@ -1,8 +1,14 @@
 import { Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { collection, query, where, getDocs } from 'firebase/firestore'
+import { useEffect, useState, useRef } from 'react'
+import {
+  collection, query, where, getDocs, addDoc,
+  orderBy, limit, serverTimestamp
+} from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../contexts/AuthContext'
+import { computePersonaScores, type Signal, type PersonaScores, type DimensionScore } from '../lib/computeScores'
+
+/* ─── Types ────────────────────────────────────────────────── */
 
 interface SignalDoc {
   toolId: string
@@ -10,77 +16,124 @@ interface SignalDoc {
   signal: string
   signalData: Record<string, unknown>
   actionType: string
+  duration?: number
   timestamp: { seconds: number } | null
-}
-
-interface Dimension {
-  name: string
-  value: string
-  confidence: 'low' | 'medium' | 'high'
-  evidence: string
 }
 
 interface Persona {
   summary: string
-  dimensions: Dimension[]
+  dimensions: { name: string; score: number; value: string; confidence: string; evidence: string }[]
+  drift_narrative: string | null
   system_prompt: string
+}
+
+interface Snapshot {
+  scores: PersonaScores
+  persona: Persona
+  createdAt: { seconds: number }
 }
 
 const MIN_SIGNALS = 5
 const MIN_TOOLS = 2
+
+/* ─── Dimension labels for display ─────────────────────────── */
+
+const DIM_META: Record<string, { low: string; high: string; color: string }> = {
+  'Risk tolerance':        { low: 'Conservative',  high: 'Aggressive',  color: '#f59e0b' },
+  'Domain focus':          { low: 'Narrow',        high: 'Broad',       color: '#6366f1' },
+  'Decision style':        { low: 'Intuitive',     high: 'Analytical',  color: '#10b981' },
+  'Learning approach':     { low: 'Structured',    high: 'Exploratory', color: '#ec4899' },
+  'Strategic orientation': { low: 'Efficiency',    high: 'Growth',      color: '#8b5cf6' },
+  'Technical depth':       { low: 'Surface',       high: 'Deep',        color: '#06b6d4' },
+}
+
+/* ─── Main Component ───────────────────────────────────────── */
 
 export default function Profile() {
   const { user } = useAuth()
   const [signals, setSignals] = useState<SignalDoc[]>([])
   const [loading, setLoading] = useState(true)
   const [persona, setPersona] = useState<Persona | null>(null)
+  const [scores, setScores] = useState<PersonaScores | null>(null)
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([])
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [activeView, setActiveView] = useState<'radar' | 'timeline'>('radar')
+  const radarCanvasRef = useRef<HTMLCanvasElement>(null)
+  const chartInstanceRef = useRef<any>(null)
 
-  // Fetch signals from Firestore
+  /* ── Fetch signals ──────────────────────────────────────── */
   useEffect(() => {
     if (!user) return
-    async function fetchSignals() {
+    async function load() {
       try {
-        const q = query(
+        // Fetch signals
+        const sigQ = query(
           collection(db, 'interactions'),
           where('userId', '==', user!.uid),
-          where('actionType', '==', 'tool_signal'),
         )
-        const snap = await getDocs(q)
-        const docs = snap.docs.map((d) => d.data() as SignalDoc)
+        const sigSnap = await getDocs(sigQ)
+        const docs = sigSnap.docs.map(d => d.data() as SignalDoc)
         setSignals(docs)
+
+        // Fetch past snapshots (last 10)
+        const snapQ = query(
+          collection(db, 'persona_snapshots'),
+          where('userId', '==', user!.uid),
+          orderBy('createdAt', 'desc'),
+          limit(10),
+        )
+        const snapSnap = await getDocs(snapQ)
+        const snaps = snapSnap.docs.map(d => d.data() as Snapshot).reverse()
+        setSnapshots(snaps)
+
+        // If we have snapshots, show the latest persona
+        if (snaps.length > 0) {
+          const latest = snaps[snaps.length - 1]
+          setPersona(latest.persona)
+          setScores(latest.scores)
+        }
       } catch (err) {
         console.warn('[Profile] fetch failed', err)
       } finally {
         setLoading(false)
       }
     }
-    fetchSignals()
+    load()
   }, [user])
 
-  // Compute thresholds
+  /* ── Compute thresholds ─────────────────────────────────── */
   const signalCount = signals.length
-  const uniqueTools = new Set(signals.map((s) => s.toolId)).size
+  const uniqueTools = new Set(signals.map(s => s.toolId)).size
   const meetsThreshold = signalCount >= MIN_SIGNALS && uniqueTools >= MIN_TOOLS
   const progress = Math.min(signalCount / MIN_SIGNALS, 1)
 
-  // Generate persona
+  /* ── Generate persona ───────────────────────────────────── */
   async function generatePersona() {
-    if (!meetsThreshold) return
+    if (!meetsThreshold || !user) return
     setGenerating(true)
     setError('')
     try {
+      // Get previous scores for drift narrative
+      const prevScores = snapshots.length > 0
+        ? snapshots[snapshots.length - 1].scores.dimensions
+        : undefined
+
       const res = await fetch('/api/persona', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          signals: signals.map((s) => ({
+          signals: signals.map(s => ({
             toolId: s.toolId,
+            toolName: s.toolName,
+            actionType: s.actionType,
             signal: s.signal,
             signalData: s.signalData,
+            duration: s.duration,
+            timestamp: s.timestamp,
           })),
+          previous_scores: prevScores,
         }),
       })
       const data = await res.json()
@@ -88,32 +141,99 @@ export default function Profile() {
         setError(data.error)
       } else {
         setPersona(data.persona)
+        setScores(data.scores)
+
+        // Save snapshot to Firestore
+        await addDoc(collection(db, 'persona_snapshots'), {
+          userId: user.uid,
+          persona: data.persona,
+          scores: data.scores,
+          createdAt: serverTimestamp(),
+        })
+
+        setSnapshots(prev => [...prev, {
+          scores: data.scores,
+          persona: data.persona,
+          createdAt: { seconds: Math.floor(Date.now() / 1000) },
+        }])
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate persona')
+      setError(err instanceof Error ? err.message : 'Failed to generate')
     } finally {
       setGenerating(false)
     }
   }
 
-  // Export as markdown
-  function exportMarkdown(): string {
-    if (!persona) return ''
-    let md = `# My AI Persona\n\n`
-    md += `> ${persona.summary}\n\n`
-    md += `## Dimensions\n\n`
-    for (const d of persona.dimensions) {
-      md += `### ${d.name}\n`
-      md += `**${d.value}** (${d.confidence} confidence)\n`
-      md += `${d.evidence}\n\n`
-    }
-    md += `## System Prompt\n\n`
-    md += `\`\`\`\n${persona.system_prompt}\n\`\`\`\n\n`
-    md += `---\n*Generated by Francium — ${new Date().toLocaleDateString()}*\n`
-    return md
-  }
+  /* ── Radar chart rendering ──────────────────────────────── */
+  useEffect(() => {
+    if (!scores || activeView !== 'radar' || !radarCanvasRef.current) return
 
-  // Copy system prompt
+    // Dynamic import Chart.js
+    const script = document.createElement('script')
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js'
+    script.onload = () => {
+      if (chartInstanceRef.current) chartInstanceRef.current.destroy()
+
+      const Chart = (window as any).Chart
+      const labels = scores.dimensions.map(d => d.name)
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+
+      const datasets: any[] = []
+
+      // If we have past snapshots, show ghosted previous shapes
+      if (snapshots.length > 1) {
+        snapshots.slice(0, -1).forEach((snap, i) => {
+          const opacity = 0.08 + (i / snapshots.length) * 0.15
+          datasets.push({
+            label: new Date(snap.createdAt.seconds * 1000).toLocaleDateString(),
+            data: snap.scores.dimensions.map(d => d.score),
+            backgroundColor: `rgba(99,102,241,${opacity})`,
+            borderColor: `rgba(99,102,241,${opacity + 0.1})`,
+            borderWidth: 1,
+            pointRadius: 0,
+          })
+        })
+      }
+
+      // Current scores on top
+      datasets.push({
+        label: 'Current',
+        data: scores.dimensions.map(d => d.score),
+        backgroundColor: 'rgba(99,102,241,0.2)',
+        borderColor: 'rgba(99,102,241,0.85)',
+        borderWidth: 2.5,
+        pointRadius: 5,
+        pointBackgroundColor: 'rgba(99,102,241,1)',
+      })
+
+      chartInstanceRef.current = new Chart(radarCanvasRef.current, {
+        type: 'radar',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            r: {
+              min: 0, max: 100,
+              ticks: { display: false, stepSize: 25 },
+              grid: { color: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
+              angleLines: { color: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
+              pointLabels: { color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)', font: { size: 11 } },
+            }
+          },
+          animation: { duration: 600, easing: 'easeInOutCubic' },
+        },
+      })
+    }
+    document.head.appendChild(script)
+
+    return () => {
+      if (chartInstanceRef.current) chartInstanceRef.current.destroy()
+    }
+  }, [scores, activeView, snapshots])
+
+  /* ── Copy / Export ──────────────────────────────────────── */
   async function copySystemPrompt() {
     if (!persona) return
     await navigator.clipboard.writeText(persona.system_prompt)
@@ -121,22 +241,35 @@ export default function Profile() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Download .md file
   function downloadMarkdown() {
-    const md = exportMarkdown()
+    if (!persona || !scores) return
+    let md = `# My AI Persona\n\n> ${persona.summary}\n\n## Dimensions\n\n`
+    scores.dimensions.forEach(d => {
+      const meta = DIM_META[d.name]
+      md += `### ${d.name}\n**${d.score}/100** (${d.confidence}) — ${meta?.low} → ${meta?.high}\n${d.evidence}\n\n`
+    })
+    if (persona.drift_narrative) md += `## What Changed\n${persona.drift_narrative}\n\n`
+    md += `## System Prompt\n\n\`\`\`\n${persona.system_prompt}\n\`\`\`\n\n---\n*Generated by Francium — ${new Date().toLocaleDateString()}*\n`
     const blob = new Blob([md], { type: 'text/markdown' })
-    const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url
+    a.href = URL.createObjectURL(blob)
     a.download = `francium-persona-${new Date().toISOString().slice(0, 10)}.md`
     a.click()
-    URL.revokeObjectURL(url)
   }
 
+  /* ── Drift deltas (current vs previous) ─────────────────── */
+  function getDelta(dimName: string): number | null {
+    if (snapshots.length < 2 || !scores) return null
+    const prev = snapshots[snapshots.length - 2].scores.dimensions.find(d => d.name === dimName)
+    const curr = scores.dimensions.find(d => d.name === dimName)
+    if (!prev || !curr) return null
+    return curr.score - prev.score
+  }
+
+  /* ── Render ─────────────────────────────────────────────── */
+
   const confidenceColor: Record<string, string> = {
-    low: '#f59e0b',
-    medium: '#6366f1',
-    high: '#10b981',
+    low: '#f59e0b', medium: '#6366f1', high: '#10b981',
   }
 
   return (
@@ -153,7 +286,6 @@ export default function Profile() {
       </nav>
 
       <main className="max-w-2xl mx-auto px-6 py-16 flex flex-col gap-12">
-
         {/* Header */}
         <header>
           <h1 className="font-display text-3xl font-extrabold tracking-tight text-white">
@@ -169,9 +301,8 @@ export default function Profile() {
             <span className="text-zinc-600 animate-pulse text-sm">Loading signals…</span>
           </div>
         ) : !meetsThreshold ? (
-          /* ── THRESHOLD NOT MET ── */
+          /* ── THRESHOLD NOT MET ─────────────────────────────── */
           <div className="flex flex-col gap-8">
-            {/* Progress card */}
             <div
               className="rounded-xl border p-6 flex flex-col gap-5"
               style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.07)' }}
@@ -184,62 +315,27 @@ export default function Profile() {
                   {signalCount}/{MIN_SIGNALS} signals · {uniqueTools}/{MIN_TOOLS} tools
                 </span>
               </div>
-
-              {/* Progress bar */}
               <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
                 <div
                   className="h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${progress * 100}%`,
-                    background: 'linear-gradient(90deg, #6366f1, #a78bfa)',
-                  }}
+                  style={{ width: `${progress * 100}%`, background: 'linear-gradient(90deg, #6366f1, #a78bfa)' }}
                 />
               </div>
-
               <p className="text-sm text-zinc-500 leading-relaxed">
                 {signalCount < MIN_SIGNALS && uniqueTools < MIN_TOOLS
-                  ? `Use ${MIN_SIGNALS - signalCount} more tools with meaningful actions across ${MIN_TOOLS - uniqueTools} more tool categories to unlock your persona.`
+                  ? `Use ${MIN_SIGNALS - signalCount} more actions across ${MIN_TOOLS - uniqueTools} more tools to unlock.`
                   : signalCount < MIN_SIGNALS
-                  ? `${MIN_SIGNALS - signalCount} more meaningful actions needed. Keep using the tools.`
-                  : `You need to use at least ${MIN_TOOLS} different tools. Try a tool you haven't used yet.`
+                  ? `${MIN_SIGNALS - signalCount} more actions needed.`
+                  : `Try at least ${MIN_TOOLS} different tools.`
                 }
               </p>
             </div>
-
-            {/* Signal log */}
-            {signalCount > 0 && (
-              <div className="flex flex-col gap-3">
-                <span className="font-mono text-[10px] text-zinc-600 uppercase tracking-wider">
-                  Signals Collected
-                </span>
-                <div className="flex flex-col gap-1.5">
-                  {signals.slice(0, 8).map((s, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between px-3 py-2 rounded-lg border"
-                      style={{ background: 'rgba(255,255,255,0.015)', borderColor: 'rgba(255,255,255,0.05)' }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[10px] text-indigo-400">{s.toolId}</span>
-                        <span className="text-zinc-700">·</span>
-                        <span className="font-mono text-[10px] text-zinc-500">{s.signal}</span>
-                      </div>
-                    </div>
-                  ))}
-                  {signals.length > 8 && (
-                    <span className="font-mono text-[10px] text-zinc-700 pl-3">
-                      +{signals.length - 8} more
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         ) : (
-          /* ── THRESHOLD MET ── */
+          /* ── MAIN PERSONA VIEW ─────────────────────────────── */
           <div className="flex flex-col gap-8">
 
-            {/* Generate button (if no persona yet) */}
+            {/* Generate / Regenerate button */}
             {!persona && !generating && (
               <div
                 className="rounded-xl border p-6 flex flex-col items-center gap-4 text-center"
@@ -250,144 +346,174 @@ export default function Profile() {
                   <span className="text-zinc-700">·</span>
                   <span className="font-mono text-xs text-emerald-400">✓ {uniqueTools} tools</span>
                 </div>
-                <p className="text-sm text-zinc-400">
-                  Enough data to build your persona. Ready to generate?
-                </p>
-                <button
-                  onClick={generatePersona}
-                  className="px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5"
-                  style={{
-                    background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-                    color: 'white',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                >
+                <button onClick={generatePersona} className="px-6 py-3 rounded-lg text-sm font-semibold text-white transition-all hover:-translate-y-0.5" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
                   Generate My Persona
                 </button>
               </div>
             )}
 
-            {/* Generating spinner */}
             {generating && (
               <div className="flex flex-col items-center gap-4 py-12">
-                <div
-                  className="w-8 h-8 rounded-full border-2 border-t-indigo-400 animate-spin"
-                  style={{ borderColor: 'rgba(255,255,255,0.1)', borderTopColor: '#818cf8' }}
-                />
-                <p className="text-sm text-zinc-500">Analyzing {signalCount} signals across {uniqueTools} tools…</p>
+                <div className="w-8 h-8 rounded-full border-2 border-t-indigo-400 animate-spin" style={{ borderColor: 'rgba(255,255,255,0.1)', borderTopColor: '#818cf8' }} />
+                <p className="text-sm text-zinc-500">Computing scores + generating narrative…</p>
               </div>
             )}
 
-            {/* Error */}
             {error && (
-              <div
-                className="rounded-lg border px-4 py-3 text-sm"
-                style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.2)', color: '#f87171' }}
-              >
+              <div className="rounded-lg border px-4 py-3 text-sm" style={{ background: 'rgba(239,68,68,0.06)', borderColor: 'rgba(239,68,68,0.2)', color: '#f87171' }}>
                 {error}
               </div>
             )}
 
-            {/* Persona display */}
-            {persona && (
-              <div className="flex flex-col gap-8">
-
-                {/* Summary */}
-                <div
-                  className="rounded-xl border p-6"
-                  style={{ background: 'rgba(99,102,241,0.04)', borderColor: 'rgba(99,102,241,0.15)' }}
-                >
-                  <span className="font-mono text-[10px] text-indigo-400 uppercase tracking-wider block mb-3">
-                    Summary
-                  </span>
-                  <p className="text-base text-zinc-300 leading-relaxed">
-                    {persona.summary}
-                  </p>
+            {persona && scores && (
+              <>
+                {/* ── Summary ──────────────────────────────────── */}
+                <div className="rounded-xl border p-6" style={{ background: 'rgba(99,102,241,0.04)', borderColor: 'rgba(99,102,241,0.15)' }}>
+                  <span className="font-mono text-[10px] text-indigo-400 uppercase tracking-wider block mb-3">Summary</span>
+                  <p className="text-base text-zinc-300 leading-relaxed">{persona.summary}</p>
                 </div>
 
-                {/* Dimensions */}
-                <div className="flex flex-col gap-3">
-                  <span className="font-mono text-[10px] text-zinc-600 uppercase tracking-wider">
-                    Dimensions
-                  </span>
-                  {persona.dimensions.map((d, i) => (
-                    <div
-                      key={i}
-                      className="rounded-lg border p-4 flex flex-col gap-2"
+                {/* ── Drift narrative (if available) ────────────── */}
+                {persona.drift_narrative && (
+                  <div className="rounded-xl border p-6" style={{ background: 'rgba(245,158,11,0.04)', borderColor: 'rgba(245,158,11,0.15)' }}>
+                    <span className="font-mono text-[10px] text-amber-400 uppercase tracking-wider block mb-3">What changed</span>
+                    <p className="text-sm text-zinc-300 leading-relaxed">{persona.drift_narrative}</p>
+                  </div>
+                )}
+
+                {/* ── View toggle: Radar / Timeline ────────────── */}
+                <div className="flex gap-2">
+                  {(['radar', 'timeline'] as const).map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setActiveView(v)}
+                      className="px-4 py-2 rounded-lg text-xs font-medium transition-all border"
                       style={{
-                        background: 'rgba(255,255,255,0.02)',
-                        borderColor: 'rgba(255,255,255,0.06)',
-                        borderLeftWidth: '3px',
-                        borderLeftColor: confidenceColor[d.confidence] || '#6366f1',
+                        background: activeView === v ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.02)',
+                        borderColor: activeView === v ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.06)',
+                        color: activeView === v ? '#818cf8' : '#71717a',
                       }}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="font-display text-sm font-semibold text-white">
-                          {d.name}
-                        </span>
-                        <span
-                          className="font-mono text-[10px] px-2 py-0.5 rounded"
-                          style={{
-                            background: `${confidenceColor[d.confidence]}15`,
-                            color: confidenceColor[d.confidence],
-                          }}
-                        >
-                          {d.confidence}
-                        </span>
-                      </div>
-                      <p className="text-sm text-zinc-300">{d.value}</p>
-                      <p className="text-xs text-zinc-600">{d.evidence}</p>
-                    </div>
+                      {v === 'radar' ? 'Radar' : 'Timeline'}
+                    </button>
                   ))}
+                  {snapshots.length > 0 && (
+                    <span className="font-mono text-[10px] text-zinc-600 self-center ml-auto">
+                      {snapshots.length} snapshot{snapshots.length > 1 ? 's' : ''}
+                    </span>
+                  )}
                 </div>
 
-                {/* System Prompt */}
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-[10px] text-zinc-600 uppercase tracking-wider">
-                      Portable Persona — paste into any AI
-                    </span>
+                {/* ── Radar view ───────────────────────────────── */}
+                {activeView === 'radar' && (
+                  <div className="rounded-xl border p-6" style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
+                    <div style={{ position: 'relative', width: '100%', height: '320px' }}>
+                      <canvas ref={radarCanvasRef} />
+                    </div>
+                    {snapshots.length > 1 && (
+                      <div className="flex gap-4 justify-center mt-4 text-[10px] text-zinc-600">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-sm" style={{ background: 'rgba(99,102,241,0.15)' }} />
+                          Earlier
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-sm" style={{ background: 'rgba(99,102,241,0.85)' }} />
+                          Current
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div
-                    className="rounded-lg border p-4"
-                    style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}
-                  >
+                )}
+
+                {/* ── Timeline view ─────────────────────────────── */}
+                {activeView === 'timeline' && (
+                  <div className="flex flex-col gap-3">
+                    {scores.dimensions.map(dim => {
+                      const meta = DIM_META[dim.name]
+                      const delta = getDelta(dim.name)
+                      return (
+                        <div
+                          key={dim.name}
+                          className="rounded-lg border p-4 flex items-center gap-4"
+                          style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}
+                        >
+                          {/* Label */}
+                          <div className="w-32 shrink-0">
+                            <div className="text-sm font-medium text-white">{dim.name}</div>
+                            <div className="text-[10px] text-zinc-600">{meta?.low} → {meta?.high}</div>
+                          </div>
+
+                          {/* Bar */}
+                          <div className="flex-1 flex items-center gap-3">
+                            <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                              <div
+                                className="h-full rounded-full transition-all duration-700"
+                                style={{ width: `${dim.score}%`, background: meta?.color || '#6366f1' }}
+                              />
+                            </div>
+                            <span className="font-mono text-xs text-zinc-300 w-8 text-right">{dim.score}</span>
+                          </div>
+
+                          {/* Delta */}
+                          <div className="w-14 text-right">
+                            {delta !== null ? (
+                              <span
+                                className="font-mono text-xs"
+                                style={{ color: delta > 3 ? '#10b981' : delta < -3 ? '#f59e0b' : '#52525b' }}
+                              >
+                                {delta > 0 ? '↑' : delta < 0 ? '↓' : '→'} {delta > 0 ? '+' : ''}{delta}
+                              </span>
+                            ) : (
+                              <span className="font-mono text-[10px] text-zinc-700">—</span>
+                            )}
+                          </div>
+
+                          {/* Confidence dot */}
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ background: confidenceColor[dim.confidence] }}
+                            title={`${dim.confidence} confidence`}
+                          />
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* ── System Prompt ─────────────────────────────── */}
+                <div className="flex flex-col gap-3">
+                  <span className="font-mono text-[10px] text-zinc-600 uppercase tracking-wider">
+                    Portable persona — paste into any AI
+                  </span>
+                  <div className="rounded-lg border p-4" style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
                     <p className="font-mono text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap">
                       {persona.system_prompt}
                     </p>
                   </div>
                 </div>
 
-                {/* Export buttons */}
+                {/* ── Actions ──────────────────────────────────── */}
                 <div className="flex gap-3">
                   <button
                     onClick={copySystemPrompt}
-                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 border"
+                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium border transition-all"
                     style={{
                       background: copied ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.02)',
                       borderColor: copied ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)',
                       color: copied ? '#34d399' : '#a1a1aa',
-                      cursor: 'pointer',
                     }}
                   >
                     {copied ? '✓ Copied!' : 'Copy System Prompt'}
                   </button>
                   <button
                     onClick={downloadMarkdown}
-                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 border"
-                    style={{
-                      background: 'rgba(99,102,241,0.08)',
-                      borderColor: 'rgba(99,102,241,0.2)',
-                      color: '#818cf8',
-                      cursor: 'pointer',
-                    }}
+                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium border transition-all"
+                    style={{ background: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.2)', color: '#818cf8' }}
                   >
                     Download .md
                   </button>
                 </div>
 
-                {/* Regenerate */}
                 <button
                   onClick={generatePersona}
                   className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors self-center"
@@ -396,16 +522,16 @@ export default function Profile() {
                   Regenerate persona
                 </button>
 
-                {/* Signal count footer */}
+                {/* Footer */}
                 <div
                   className="rounded-lg border px-4 py-3 text-center"
                   style={{ background: 'rgba(255,255,255,0.015)', borderColor: 'rgba(255,255,255,0.05)' }}
                 >
                   <span className="font-mono text-[10px] text-zinc-600">
-                    Built from {signalCount} signals across {uniqueTools} tools · {new Date().toLocaleDateString()}
+                    {scores.totalSignals} signals · {snapshots.length} snapshots · {new Date().toLocaleDateString()}
                   </span>
                 </div>
-              </div>
+              </>
             )}
           </div>
         )}

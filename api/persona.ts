@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { computePersonaScores, type Signal } from '../src/lib/computeScores.js'
+import { computePersonaScores, type Signal } from './computeScores'
 export const config = { runtime: 'nodejs' }
 
 const PERSONA_PROMPT = `You are a behavioral analyst. You are given:
