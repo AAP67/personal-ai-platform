@@ -74,7 +74,7 @@ function ToolCard({ tool, accent, accentBorder, accentBg }: {
         </span>
       </div>
 
-      <p className="font-body text-zinc-500 text-xs leading-relaxed">
+      <p className="font-body text-zinc-500 text-xs leading-relaxed line-clamp-2">
         {tool.description}
       </p>
 
@@ -112,7 +112,10 @@ export default function Landing() {
             <span className="font-display text-lg font-extrabold tracking-tight text-white">
               Francium
             </span>
-            <span className="text-[10px] font-mono text-zinc-600 hidden sm:inline">
+            <span
+              className="text-[10px] font-mono hidden sm:inline px-1.5 py-0.5 rounded"
+              style={{ color: 'rgba(99,102,241,0.5)', background: 'rgba(99,102,241,0.08)' }}
+            >
               element 87
             </span>
           </div>
@@ -168,7 +171,7 @@ export default function Landing() {
                 }}
               />
               <span className="font-mono text-xs text-indigo-300 font-semibold relative">revealed preferences</span>
-              <span className="text-indigo-500/60 font-mono text-lg font-bold relative">&gt;</span>
+              <span className="text-indigo-500/60 font-mono text-xs font-bold relative">&gt;</span>
               <span className="font-mono text-xs text-zinc-500 relative">stated preferences</span>
             </div>
           </div>
@@ -211,13 +214,37 @@ export default function Landing() {
             {[
               { val: '7', label: 'tools' },
               { val: '3', label: 'domains' },
-              { val: '∞', label: 'signals' },
+              { val: '6', label: 'dimensions' },
             ].map((s) => (
               <div key={s.label} className="flex items-baseline gap-1.5">
                 <span className="font-mono text-lg font-bold text-indigo-400">{s.val}</span>
                 <span className="font-mono text-[10px] text-zinc-600">{s.label}</span>
               </div>
             ))}
+          </div>
+
+          {/* Divider */}
+          <div className="w-full h-px my-6" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+          {/* How it works */}
+          <div className="flex flex-col gap-4">
+            <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-zinc-600">How it works</span>
+            {[
+              { step: '01', text: 'Use the tools — search, analyze, decide' },
+              { step: '02', text: 'Every action becomes a behavioral signal' },
+              { step: '03', text: 'Your AI persona emerges from usage patterns' },
+            ].map((s) => (
+              <div key={s.step} className="flex items-start gap-3">
+                <span className="font-mono text-[10px] text-indigo-500 mt-0.5">{s.step}</span>
+                <span className="text-xs text-zinc-500 leading-relaxed">{s.text}</span>
+              </div>
+            ))}
+            <Link
+              to="/profile"
+              className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors mt-1 flex items-center gap-1"
+            >
+              View your persona →
+            </Link>
           </div>
 
           {/* Spacer to push links to bottom */}
