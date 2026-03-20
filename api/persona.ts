@@ -1,94 +1,99 @@
-import Anthropic from '@anthropic-ai/sdk';
+import Anthropic from '@anthropic-ai/sdk'
+import { computePersonaScores, type Signal } from '../src/lib/computeScores.js'
+export const config = { runtime: 'nodejs' }
 
-export const config = { runtime: 'nodejs' };
+const PERSONA_PROMPT = `You are a behavioral analyst. You are given:
+1. DETERMINISTIC SCORES (0-100) already computed from tool usage signals
+2. The raw signals themselves for context
 
-const PERSONA_PROMPT = `You are a behavioral analyst. Given the following tool usage signals from a platform where users interact with AI-powered tools, infer a structured persona.
+Write qualitative analysis AROUND the scores. Do NOT generate or change scores.
 
-Each signal represents a meaningful action the user took — not just opening a tool, but the actual decisions they made inside it.
-
-Analyze the signals and output a JSON object with exactly this structure:
+Output a JSON object:
 
 {
-  "summary": "2-3 sentence overview of who this person is, based purely on their behavior",
+  "summary": "2-3 sentence behavioral overview",
   "dimensions": [
     {
-      "name": "dimension name",
-      "value": "the inferred trait or preference",
-      "confidence": "low | medium | high",
-      "evidence": "1 sentence explaining which signals led to this inference"
+      "name": "dimension name (must match score name exactly)",
+      "score": <EXACT SCORE PROVIDED — DO NOT CHANGE>,
+      "value": "qualitative description of what this score means",
+      "confidence": "<EXACT CONFIDENCE PROVIDED>",
+      "evidence": "1 sentence linking signals to this score"
     }
   ],
-  "system_prompt": "A ready-to-paste system prompt (100-200 words) that any AI assistant could use to personalize its responses for this user. Written in second person: 'You are assisting someone who...'"
+  "drift_narrative": "If previous_scores provided, 2-3 sentences on what changed and why. Otherwise null.",
+  "system_prompt": "100-200 word system prompt for any AI. Second person: 'You are assisting someone who...'"
 }
 
-The dimensions should cover whichever of these are supported by the data (skip any that lack evidence):
-- Risk tolerance (conservative to aggressive)
-- Domain focus (what fields/industries they care about)
-- Decision-making style (analytical, intuitive, framework-driven)
-- Learning approach (self-directed, structured, exploratory)
-- Strategic orientation (growth vs. efficiency, speed vs. thoroughness)
-- Career trajectory (what roles/skills they're building toward)
-- Technical depth (surface-level user vs. deep builder)
-
 Rules:
-- Only infer what the data supports. Don't hallucinate traits.
-- Confidence should reflect signal strength: 1-2 signals on a dimension = low, 3-4 = medium, 5+ = high.
-- The system_prompt should be practical and specific, not generic.
-- Return ONLY the JSON object. No markdown, no code fences, no commentary.`;
+- NEVER change numeric scores or confidence — they are computed facts.
+- Your job: make numbers human-readable and write the narrative.
+- Return ONLY the JSON. No markdown, no fences.`
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
-    return res.status(500).json({ error: 'API key not configured' });
+    return res.status(500).json({ error: 'API key not configured' })
   }
 
   try {
-    const { signals } = req.body;
+    const { signals, previous_scores } = req.body
 
     if (!signals || !Array.isArray(signals) || signals.length === 0) {
-      return res.status(400).json({ error: 'No signals provided' });
+      return res.status(400).json({ error: 'No signals provided' })
     }
 
-    // Format signals for the prompt
-    const signalText = signals.map((s, i) => {
-      const toolId = s.toolId || 'unknown';
-      const signal = s.signal || 'unknown';
-      const data = s.signalData ? JSON.stringify(s.signalData) : '{}';
-      return `Signal ${i + 1} [${toolId}] ${signal}: ${data}`;
-    }).join('\n');
+    // ── Step 1: Deterministic scores ────────────────────────
+    const scores = computePersonaScores(signals as Signal[])
 
-    const client = new Anthropic({ apiKey });
+    // ── Step 2: Format for Claude ───────────────────────────
+    const scoreText = scores.dimensions
+      .map(d => `${d.name}: ${d.score}/100 (${d.confidence}, ${d.signalCount} signals) — ${d.evidence}`)
+      .join('\n')
 
+    const signalText = signals.slice(0, 50).map((s: any, i: number) => {
+      const data = s.signalData ? JSON.stringify(s.signalData) : '{}'
+      return `Signal ${i + 1} [${s.toolId}] ${s.signal || s.actionType}: ${data}`
+    }).join('\n')
+
+    const prevText = previous_scores
+      ? '\n\nPREVIOUS SCORES (for drift narrative):\n' +
+        previous_scores.map((d: any) => `${d.name}: ${d.score}/100`).join('\n')
+      : ''
+
+    // ── Step 3: Claude → narrative only ─────────────────────
+    const client = new Anthropic({ apiKey })
     const message = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
-      messages: [
-        {
-          role: 'user',
-          content: `${PERSONA_PROMPT}\n\nHere are the user's signals:\n\n${signalText}`
-        }
-      ]
-    });
+      temperature: 0,
+      messages: [{
+        role: 'user',
+        content: `${PERSONA_PROMPT}\n\nDETERMINISTIC SCORES:\n${scoreText}\n\nRAW SIGNALS:\n${signalText}${prevText}`
+      }]
+    })
 
-    const responseText = message.content[0].text.trim();
+    const raw = (message.content[0] as any).text.trim()
 
-    // Parse the JSON response
-    let persona;
+    let persona
     try {
-      const cleaned = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      persona = JSON.parse(cleaned);
-    } catch (parseErr) {
-      return res.status(500).json({ error: 'Failed to parse persona response', raw: responseText });
+      persona = JSON.parse(raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
+    } catch {
+      return res.status(500).json({ error: 'Failed to parse persona', raw })
     }
 
-    return res.status(200).json({ persona });
+    // ── Step 4: Return both ─────────────────────────────────
+    return res.status(200).json({
+      persona,
+      scores,  // ← drift chart reads this
+    })
 
-  } catch (err) {
-    console.error('Persona generation error:', err);
-    return res.status(500).json({ error: err.message || 'Internal server error' });
+  } catch (err: any) {
+    console.error('Persona error:', err)
+    return res.status(500).json({ error: err.message || 'Internal error' })
   }
 }
