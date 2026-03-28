@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { useEffect, useRef } from 'react'
 import { toolsByCategory, categoryOrder, categoryMeta, ToolConfig } from '../tools/registry'
 
 // ── SVG Icons ────────────────────────────────────────────────────
@@ -29,19 +28,21 @@ function MailIcon({ className }: { className?: string }) {
 }
 
 // ── Row-style tool card ──────────────────────────────────────────
-function ToolRow({ tool, accentBorder, accentBg }: {
+function ToolRow({ tool, accentBorder, accentBg, delay }: {
   tool: ToolConfig
   accent: string
   accentBorder: string
   accentBg: string
+  delay: number
 }) {
   return (
     <Link
       to={`/tools/${tool.route}`}
-      className="group relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 hover:-translate-y-0.5"
+      className="tool-card-animate group relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 hover:-translate-y-0.5"
       style={{
         background: 'rgba(255,255,255,0.015)',
         borderColor: 'rgba(255,255,255,0.06)',
+        animationDelay: `${delay}ms`,
       }}
     >
       {/* Hover glow */}
@@ -52,7 +53,7 @@ function ToolRow({ tool, accentBorder, accentBg }: {
 
       {/* Icon */}
       <div
-        className="relative w-10 h-10 rounded-lg flex items-center justify-center text-lg shrink-0 transition-transform duration-300 group-hover:scale-105"
+        className="relative w-10 h-10 rounded-lg flex items-center justify-center text-lg shrink-0 transition-transform duration-300 group-hover:scale-110"
         style={{ background: accentBg, border: `1px solid ${accentBorder}` }}
       >
         {tool.icon}
@@ -65,7 +66,7 @@ function ToolRow({ tool, accentBorder, accentBg }: {
             {tool.name}
           </h3>
           <span
-            className="text-[9px] font-bold px-1.5 py-0.5 rounded font-mono tracking-wider shrink-0"
+            className="live-badge text-[9px] font-bold px-1.5 py-0.5 rounded font-mono tracking-wider shrink-0"
             style={{ background: 'rgba(16,185,129,0.1)', color: '#34d399' }}
           >
             LIVE
@@ -78,7 +79,7 @@ function ToolRow({ tool, accentBorder, accentBg }: {
 
       {/* Arrow */}
       <svg
-        className="relative w-4 h-4 text-zinc-700 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all duration-200 shrink-0"
+        className="relative w-4 h-4 text-zinc-700 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all duration-200 shrink-0"
         fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
       >
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -88,35 +89,47 @@ function ToolRow({ tool, accentBorder, accentBg }: {
 }
 
 // ── How-it-works step ────────────────────────────────────────────
-function Step({ num, title, desc, isLast }: {
+function Step({ num, title, desc, isLast, stepIndex }: {
   num: string
   title: string
   desc: string
   isLast?: boolean
+  stepIndex: number
 }) {
+  const baseDelay = 600 // after hero text
+  const circleDelay = baseDelay + stepIndex * 250
+  const connectorDelay = circleDelay + 200
+
   return (
     <div className="flex gap-3.5">
       {/* Vertical connector */}
       <div className="flex flex-col items-center">
         <div
-          className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+          className="step-circle w-7 h-7 rounded-full flex items-center justify-center shrink-0"
           style={{
             background: 'rgba(99,102,241,0.1)',
             border: '1px solid rgba(99,102,241,0.25)',
+            animationDelay: `${circleDelay}ms`,
           }}
         >
           <span className="font-mono text-[10px] font-bold text-indigo-400">{num}</span>
         </div>
         {!isLast && (
           <div
-            className="w-px flex-1 min-h-[20px] mt-1.5"
-            style={{ background: 'rgba(99,102,241,0.12)' }}
+            className="step-connector w-px flex-1 min-h-[20px] mt-1.5"
+            style={{
+              background: 'rgba(99,102,241,0.12)',
+              animationDelay: `${connectorDelay}ms`,
+            }}
           />
         )}
       </div>
 
       {/* Text */}
-      <div className="pb-5">
+      <div
+        className="pb-5 hero-animate"
+        style={{ animationDelay: `${circleDelay + 100}ms` }}
+      >
         <p className="font-display text-[13px] font-semibold text-white leading-snug">{title}</p>
         <p className="font-body text-xs text-zinc-500 mt-1 leading-relaxed">{desc}</p>
       </div>
@@ -127,27 +140,9 @@ function Step({ num, title, desc, isLast }: {
 // ── Landing Page ─────────────────────────────────────────────────
 export default function Landing() {
   const grouped = toolsByCategory()
-  const rightPanelRef = useRef<HTMLDivElement>(null)
 
-  // Staggered reveal for tool cards
-  useEffect(() => {
-    const cards = rightPanelRef.current?.querySelectorAll('.tool-reveal')
-    if (!cards) return
-
-    cards.forEach((card, i) => {
-      const el = card as HTMLElement
-      el.style.opacity = '0'
-      el.style.transform = 'translateY(16px)'
-      el.style.transition = `opacity 0.5s cubic-bezier(0.22,1,0.36,1) ${i * 60}ms, transform 0.5s cubic-bezier(0.22,1,0.36,1) ${i * 60}ms`
-
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          el.style.opacity = '1'
-          el.style.transform = 'translateY(0)'
-        }, 50)
-      })
-    })
-  }, [])
+  // Calculate animation delays for tool cards across all categories
+  let toolIndex = 0
 
   return (
     <div className="h-screen flex flex-col font-body overflow-hidden" style={{ background: '#08080d' }}>
@@ -201,71 +196,72 @@ export default function Landing() {
           className="lg:w-[340px] xl:w-[380px] shrink-0 border-b lg:border-b-0 lg:border-r flex flex-col p-6 lg:p-8 overflow-y-auto relative"
           style={{ borderColor: 'rgba(255,255,255,0.06)' }}
         >
-          {/* Gradient orb */}
+          {/* Gradient orb — animated breathing */}
           <div
-            className="absolute -bottom-16 -left-10 w-52 h-52 pointer-events-none"
-            style={{ background: 'radial-gradient(ellipse, rgba(99,102,241,0.07) 0%, transparent 70%)' }}
+            className="gradient-orb absolute -bottom-16 left-1/2 w-64 h-64 pointer-events-none"
+            style={{
+              background: 'radial-gradient(ellipse, rgba(99,102,241,0.09) 0%, transparent 70%)',
+              transform: 'translateX(-50%)',
+            }}
           />
 
           {/* Thesis */}
-          <div className="relative z-10 flex flex-col gap-5 hero-animate" style={{ animationDelay: '0.1s' }}>
-            <h1 className="font-display text-[26px] xl:text-[30px] font-extrabold text-white leading-[1.15] tracking-tight">
+          <div className="relative z-10 flex flex-col gap-5">
+            <h1
+              className="hero-animate font-display text-[26px] xl:text-[30px] font-extrabold text-white leading-[1.15] tracking-tight"
+              style={{ animationDelay: '0.15s' }}
+            >
               Your tools define{' '}
               <span className="gradient-text">your AI</span>
             </h1>
 
-            <p className="font-body text-sm text-zinc-500 leading-relaxed">
+            <p
+              className="hero-animate font-body text-sm text-zinc-500 leading-relaxed"
+              style={{ animationDelay: '0.3s' }}
+            >
               A platform where tool usage — not forms — builds a model of who you are.
               Every search, decision, and interaction is a signal.
             </p>
 
-            {/* Thesis pill */}
+            {/* Thesis pill — with shimmer sweep */}
             <div
-              className="relative flex items-center gap-2.5 px-4 py-2.5 rounded-lg border self-start overflow-hidden"
+              className="hero-animate thesis-pill flex items-center gap-2.5 px-4 py-2.5 rounded-lg border self-start"
               style={{
                 background: 'rgba(99,102,241,0.06)',
                 borderColor: 'rgba(99,102,241,0.18)',
+                animationDelay: '0.45s',
               }}
             >
-              <span className="font-mono text-xs text-indigo-300 font-semibold relative">revealed preferences</span>
-              <span className="text-indigo-500/60 font-mono text-xs font-bold relative">&gt;</span>
-              <span className="font-mono text-xs text-zinc-500 relative">stated preferences</span>
+              <span className="font-mono text-xs text-indigo-300 font-semibold relative z-10">revealed preferences</span>
+              <span className="text-indigo-500/60 font-mono text-xs font-bold relative z-10">&gt;</span>
+              <span className="font-mono text-xs text-zinc-500 relative z-10">stated preferences</span>
             </div>
           </div>
 
           {/* Divider */}
           <div className="w-full h-px my-7" style={{ background: 'rgba(255,255,255,0.06)' }} />
 
-          {/* How it works — connected steps */}
-          <div className="relative z-10 flex flex-col hero-animate" style={{ animationDelay: '0.3s' }}>
-            <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-zinc-600 mb-5">
+          {/* How it works — connected steps with staggered animation */}
+          <div className="relative z-10 flex flex-col">
+            <span
+              className="hero-animate font-mono text-[10px] tracking-[0.2em] uppercase text-zinc-600 mb-5"
+              style={{ animationDelay: '0.55s' }}
+            >
               How it works
             </span>
 
-            <Step
-              num="1"
-              title="Use the tools"
-              desc="Search, analyze, decide — naturally."
-            />
-            <Step
-              num="2"
-              title="Signals accumulate"
-              desc="Every action reveals a behavioral preference."
-            />
-            <Step
-              num="3"
-              title="Persona emerges"
-              desc="Portable to any AI. No forms, no questionnaires."
-              isLast
-            />
+            <Step num="1" title="Use the tools" desc="Search, analyze, decide — naturally." stepIndex={0} />
+            <Step num="2" title="Signals accumulate" desc="Every action reveals a behavioral preference." stepIndex={1} />
+            <Step num="3" title="Persona emerges" desc="Portable to any AI. No forms, no questionnaires." stepIndex={2} isLast />
 
             <Link
               to="/profile"
-              className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors mt-2 flex items-center gap-1.5 group"
+              className="hero-animate text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors mt-2 flex items-center gap-1.5 group"
+              style={{ animationDelay: '1.5s' }}
             >
               View your persona
               <svg
-                className="w-3 h-3 group-hover:translate-x-0.5 transition-transform"
+                className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-200"
                 fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -278,8 +274,8 @@ export default function Landing() {
 
           {/* Builder byline */}
           <div
-            className="relative z-10 flex flex-col gap-2.5 mt-6 hero-animate"
-            style={{ animationDelay: '0.5s' }}
+            className="hero-animate relative z-10 flex flex-col gap-2.5 mt-6"
+            style={{ animationDelay: '1.7s' }}
           >
             <div className="w-full h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
             <p className="text-[11px] text-zinc-600 pt-1">
@@ -322,7 +318,7 @@ export default function Landing() {
         </aside>
 
         {/* ── RIGHT PANEL: Tools ── */}
-        <main ref={rightPanelRef} className="flex-1 overflow-y-auto p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
           <div className="max-w-2xl">
             <div className="flex flex-col gap-10">
               {categoryOrder.map((cat) => {
@@ -330,10 +326,16 @@ export default function Landing() {
                 if (!tools || tools.length === 0) return null
                 const meta = categoryMeta[cat]
 
+                // Each category header gets a delay, then each tool card staggers after it
+                const categoryDelay = 300 + toolIndex * 80
+
                 return (
                   <section key={cat}>
-                    {/* Category header */}
-                    <div className="flex items-center gap-2.5 mb-3 tool-reveal">
+                    {/* Category header with animated line */}
+                    <div
+                      className="hero-animate flex items-center gap-2.5 mb-3"
+                      style={{ animationDelay: `${categoryDelay}ms` }}
+                    >
                       <div
                         className="w-1 h-4 rounded-full"
                         style={{ background: meta.accent }}
@@ -344,24 +346,34 @@ export default function Landing() {
                       >
                         {cat}
                       </h2>
-                      <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.04)' }} />
+                      <div
+                        className="category-header-line flex-1 h-px"
+                        style={{
+                          background: 'rgba(255,255,255,0.04)',
+                          animationDelay: `${categoryDelay + 200}ms`,
+                        }}
+                      />
                       <span className="font-mono text-[10px] text-zinc-700">
                         {tools.length}
                       </span>
                     </div>
 
-                    {/* Tool rows */}
+                    {/* Tool rows with staggered slide-in */}
                     <div className="flex flex-col gap-2.5">
-                      {tools.map((tool) => (
-                        <div key={tool.id} className="tool-reveal">
+                      {tools.map((tool) => {
+                        const delay = 400 + toolIndex * 80
+                        toolIndex++
+                        return (
                           <ToolRow
+                            key={tool.id}
                             tool={tool}
                             accent={meta.accent}
                             accentBorder={meta.accentBorder}
                             accentBg={meta.accentBg}
+                            delay={delay}
                           />
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </section>
                 )
