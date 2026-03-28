@@ -1,4 +1,7 @@
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '../lib/firebase'
 import { toolsByCategory, categoryOrder, categoryMeta, ToolConfig } from '../tools/registry'
 
 // ── SVG Icons ────────────────────────────────────────────────────
@@ -27,6 +30,100 @@ function MailIcon({ className }: { className?: string }) {
   )
 }
 
+// ── Signal Counter ───────────────────────────────────────────────
+function SignalCounter() {
+  const [count, setCount] = useState<number | null>(null)
+  const [lastSignal, setLastSignal] = useState<string | null>(null)
+  const [displayCount, setDisplayCount] = useState(0)
+
+  // Fetch platform stats from Firestore
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const snap = await getDoc(doc(db, 'meta', 'platform_stats'))
+        if (snap.exists()) {
+          const data = snap.data()
+          const total = data.totalSignals ?? 0
+          setCount(total)
+
+          if (data.lastSignalAt?.seconds) {
+            const diff = Math.floor((Date.now() / 1000) - data.lastSignalAt.seconds)
+            if (diff < 60) setLastSignal(`${diff}s ago`)
+            else if (diff < 3600) setLastSignal(`${Math.floor(diff / 60)}m ago`)
+            else if (diff < 86400) setLastSignal(`${Math.floor(diff / 3600)}h ago`)
+            else setLastSignal(`${Math.floor(diff / 86400)}d ago`)
+          }
+        }
+      } catch {
+        // Silently fail — counter is non-critical
+      }
+    }
+    fetchStats()
+  }, [])
+
+  // Animate count up
+  useEffect(() => {
+    if (count === null) return
+    const duration = 1200
+    const start = performance.now()
+    const from = 0
+    const to = count
+
+    function tick(now: number) {
+      const elapsed = now - start
+      const progress = Math.min(elapsed / duration, 1)
+      // Ease out cubic
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setDisplayCount(Math.round(from + (to - from) * eased))
+      if (progress < 1) requestAnimationFrame(tick)
+    }
+
+    requestAnimationFrame(tick)
+  }, [count])
+
+  if (count === null) return null
+
+  return (
+    <div
+      className="hero-animate rounded-lg border px-4 py-3.5 flex items-center gap-3"
+      style={{
+        background: 'rgba(99,102,241,0.04)',
+        borderColor: 'rgba(99,102,241,0.12)',
+        animationDelay: '1.3s',
+      }}
+    >
+      {/* Pulsing dot */}
+      <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
+        <div
+          className="signal-dot absolute w-2.5 h-2.5 rounded-full"
+          style={{ background: '#818cf8' }}
+        />
+        <div
+          className="absolute w-5 h-5 rounded-full"
+          style={{ background: 'rgba(99,102,241,0.15)' }}
+        />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-1.5">
+          <span
+            className="font-mono text-sm font-bold text-indigo-300"
+            key={displayCount}
+          >
+            {displayCount.toLocaleString()}
+          </span>
+          <span className="font-mono text-[10px] text-zinc-600">signals captured</span>
+        </div>
+        {lastSignal && (
+          <p className="font-mono text-[10px] text-zinc-700 mt-0.5">
+            Last signal: {lastSignal}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Row-style tool card ──────────────────────────────────────────
 function ToolRow({ tool, accentBorder, accentBg, delay }: {
   tool: ToolConfig
@@ -40,8 +137,8 @@ function ToolRow({ tool, accentBorder, accentBg, delay }: {
       to={`/tools/${tool.route}`}
       className="tool-card-animate group relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 hover:-translate-y-0.5"
       style={{
-        background: 'rgba(255,255,255,0.015)',
-        borderColor: 'rgba(255,255,255,0.06)',
+        background: accentBg,
+        borderColor: accentBorder,
         animationDelay: `${delay}ms`,
       }}
     >
@@ -72,7 +169,7 @@ function ToolRow({ tool, accentBorder, accentBg, delay }: {
             LIVE
           </span>
         </div>
-        <p className="font-body text-zinc-500 text-xs leading-relaxed mt-1 line-clamp-1">
+        <p className="font-body text-zinc-600 text-xs leading-relaxed mt-1 line-clamp-1">
           {tool.description}
         </p>
       </div>
@@ -96,13 +193,12 @@ function Step({ num, title, desc, isLast, stepIndex }: {
   isLast?: boolean
   stepIndex: number
 }) {
-  const baseDelay = 600 // after hero text
+  const baseDelay = 600
   const circleDelay = baseDelay + stepIndex * 250
   const connectorDelay = circleDelay + 200
 
   return (
     <div className="flex gap-3.5">
-      {/* Vertical connector */}
       <div className="flex flex-col items-center">
         <div
           className="step-circle w-7 h-7 rounded-full flex items-center justify-center shrink-0"
@@ -124,8 +220,6 @@ function Step({ num, title, desc, isLast, stepIndex }: {
           />
         )}
       </div>
-
-      {/* Text */}
       <div
         className="pb-5 hero-animate"
         style={{ animationDelay: `${circleDelay + 100}ms` }}
@@ -140,16 +234,14 @@ function Step({ num, title, desc, isLast, stepIndex }: {
 // ── Landing Page ─────────────────────────────────────────────────
 export default function Landing() {
   const grouped = toolsByCategory()
-
-  // Calculate animation delays for tool cards across all categories
   let toolIndex = 0
 
   return (
-    <div className="h-screen flex flex-col font-body overflow-hidden" style={{ background: '#08080d' }}>
+    <div className="h-screen flex flex-col font-body overflow-hidden relative grain" style={{ background: '#08080d' }}>
 
       {/* ── Top Bar ── */}
       <nav
-        className="shrink-0 px-6 py-3.5 flex items-center justify-between border-b"
+        className="shrink-0 px-6 py-3.5 flex items-center justify-between border-b relative z-10"
         style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(8,8,13,0.95)' }}
       >
         <div className="flex items-center gap-3.5">
@@ -189,14 +281,14 @@ export default function Landing() {
       </nav>
 
       {/* ── Main Split ── */}
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0">
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative z-10">
 
-        {/* ── LEFT PANEL: Thesis + How it works ── */}
+        {/* ── LEFT PANEL ── */}
         <aside
           className="lg:w-[340px] xl:w-[380px] shrink-0 border-b lg:border-b-0 lg:border-r flex flex-col p-6 lg:p-8 overflow-y-auto relative"
-          style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+          style={{ borderColor: 'rgba(255,255,255,0.08)' }}
         >
-          {/* Gradient orb — animated breathing */}
+          {/* Gradient orb */}
           <div
             className="gradient-orb absolute -bottom-16 left-1/2 w-64 h-64 pointer-events-none"
             style={{
@@ -223,7 +315,7 @@ export default function Landing() {
               Every search, decision, and interaction is a signal.
             </p>
 
-            {/* Thesis pill — with shimmer sweep */}
+            {/* Thesis pill */}
             <div
               className="hero-animate thesis-pill flex items-center gap-2.5 px-4 py-2.5 rounded-lg border self-start"
               style={{
@@ -241,7 +333,7 @@ export default function Landing() {
           {/* Divider */}
           <div className="w-full h-px my-7" style={{ background: 'rgba(255,255,255,0.06)' }} />
 
-          {/* How it works — connected steps with staggered animation */}
+          {/* How it works */}
           <div className="relative z-10 flex flex-col">
             <span
               className="hero-animate font-mono text-[10px] tracking-[0.2em] uppercase text-zinc-600 mb-5"
@@ -269,8 +361,16 @@ export default function Landing() {
             </Link>
           </div>
 
+          {/* Divider */}
+          <div className="w-full h-px my-6" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+          {/* Signal Counter */}
+          <div className="relative z-10">
+            <SignalCounter />
+          </div>
+
           {/* Spacer */}
-          <div className="flex-1 min-h-6" />
+          <div className="flex-1 min-h-4" />
 
           {/* Builder byline */}
           <div
@@ -317,21 +417,30 @@ export default function Landing() {
           </div>
         </aside>
 
-        {/* ── RIGHT PANEL: Tools ── */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
-          <div className="max-w-2xl">
+        {/* ── RIGHT PANEL ── */}
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8 relative">
+          {/* Right panel gradient orb — amber tinted, behind finance section */}
+          <div
+            className="absolute top-0 right-0 w-80 h-80 pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse at top right, rgba(245,158,11,0.04) 0%, transparent 70%)' }}
+          />
+          {/* Second orb — emerald, behind career section */}
+          <div
+            className="absolute bottom-0 left-0 w-72 h-72 pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse at bottom left, rgba(16,185,129,0.03) 0%, transparent 70%)' }}
+          />
+
+          <div className="max-w-2xl relative z-10">
             <div className="flex flex-col gap-10">
               {categoryOrder.map((cat) => {
                 const tools = grouped[cat]
                 if (!tools || tools.length === 0) return null
                 const meta = categoryMeta[cat]
-
-                // Each category header gets a delay, then each tool card staggers after it
                 const categoryDelay = 300 + toolIndex * 80
 
                 return (
                   <section key={cat}>
-                    {/* Category header with animated line */}
+                    {/* Category header */}
                     <div
                       className="hero-animate flex items-center gap-2.5 mb-3"
                       style={{ animationDelay: `${categoryDelay}ms` }}
@@ -358,7 +467,7 @@ export default function Landing() {
                       </span>
                     </div>
 
-                    {/* Tool rows with staggered slide-in */}
+                    {/* Tool rows */}
                     <div className="flex flex-col gap-2.5">
                       {tools.map((tool) => {
                         const delay = 400 + toolIndex * 80

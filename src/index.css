@@ -201,3 +201,23 @@ html {
 .live-badge {
   animation: live-pulse 2.5s ease-in-out infinite;
 }
+
+/* ── Signal counter dot pulse ── */
+@keyframes signal-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.signal-dot {
+  animation: signal-dot 2s ease-in-out infinite;
+}
+
+/* ── Signal count tick-up ── */
+@keyframes signal-tick {
+  0% { opacity: 0.6; transform: translateY(2px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.signal-tick {
+  animation: signal-tick 0.3s ease-out;
+}

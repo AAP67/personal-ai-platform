@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
+import { addDoc, collection, doc, setDoc, increment, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -28,6 +28,12 @@ export async function writeInteraction(payload: InteractionPayload): Promise<voi
       ...payload,
       timestamp: serverTimestamp(),
     })
+
+    // Increment platform-wide signal counter (best-effort, non-blocking)
+    setDoc(doc(db, 'meta', 'platform_stats'), {
+      totalSignals: increment(1),
+      lastSignalAt: serverTimestamp(),
+    }, { merge: true }).catch(() => {})
   } catch (err) {
     // Never crash the UI over a logging failure
     console.warn('[logInteraction] write failed', err)
