@@ -30,13 +30,21 @@ function MailIcon({ className }: { className?: string }) {
   )
 }
 
+// ── Boosted card tints (registry values are too subtle at 0.05) ──
+const CARD_TINTS: Record<string, { bg: string; border: string }> = {
+  'Finance & Investment':   { bg: 'rgba(245,158,11,0.08)',  border: 'rgba(245,158,11,0.18)' },
+  'Strategy & Operations':  { bg: 'rgba(99,102,241,0.08)',  border: 'rgba(99,102,241,0.18)' },
+  'Career & Learning':      { bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.18)' },
+}
+
 // ── Signal Counter ───────────────────────────────────────────────
 function SignalCounter() {
   const [count, setCount] = useState<number | null>(null)
   const [lastSignal, setLastSignal] = useState<string | null>(null)
   const [displayCount, setDisplayCount] = useState(0)
+  const [loaded, setLoaded] = useState(false)
+  const [failed, setFailed] = useState(false)
 
-  // Fetch platform stats from Firestore
   useEffect(() => {
     async function fetchStats() {
       try {
@@ -53,9 +61,15 @@ function SignalCounter() {
             else if (diff < 86400) setLastSignal(`${Math.floor(diff / 3600)}h ago`)
             else setLastSignal(`${Math.floor(diff / 86400)}d ago`)
           }
+        } else {
+          // Doc doesn't exist yet — show 0
+          setCount(0)
         }
-      } catch {
-        // Silently fail — counter is non-critical
+      } catch (err) {
+        console.warn('[SignalCounter] fetch failed:', err)
+        setFailed(true)
+      } finally {
+        setLoaded(true)
       }
     }
     fetchStats()
@@ -63,89 +77,93 @@ function SignalCounter() {
 
   // Animate count up
   useEffect(() => {
-    if (count === null) return
+    if (count === null || count === 0) return
     const duration = 1200
     const start = performance.now()
-    const from = 0
-    const to = count
 
     function tick(now: number) {
       const elapsed = now - start
       const progress = Math.min(elapsed / duration, 1)
-      // Ease out cubic
       const eased = 1 - Math.pow(1 - progress, 3)
-      setDisplayCount(Math.round(from + (to - from) * eased))
+      setDisplayCount(Math.round(count! * eased))
       if (progress < 1) requestAnimationFrame(tick)
     }
 
     requestAnimationFrame(tick)
   }, [count])
 
-  if (count === null) return null
+  // Don't render until loaded
+  if (!loaded) return null
+  // If rules blocked us, show nothing rather than broken UI
+  if (failed) return null
 
   return (
     <div
       className="hero-animate rounded-lg border px-4 py-3.5 flex items-center gap-3"
       style={{
-        background: 'rgba(99,102,241,0.04)',
-        borderColor: 'rgba(99,102,241,0.12)',
+        background: 'rgba(99,102,241,0.05)',
+        borderColor: 'rgba(99,102,241,0.15)',
         animationDelay: '1.3s',
       }}
     >
       {/* Pulsing dot */}
       <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
         <div
-          className="signal-dot absolute w-2.5 h-2.5 rounded-full"
-          style={{ background: '#818cf8' }}
-        />
-        <div
           className="absolute w-5 h-5 rounded-full"
           style={{ background: 'rgba(99,102,241,0.15)' }}
+        />
+        <div
+          className="signal-dot absolute w-2.5 h-2.5 rounded-full"
+          style={{ background: '#818cf8' }}
         />
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-1.5">
-          <span
-            className="font-mono text-sm font-bold text-indigo-300"
-            key={displayCount}
-          >
-            {displayCount.toLocaleString()}
+          <span className="font-mono text-sm font-bold text-indigo-300">
+            {count === 0 ? '0' : displayCount.toLocaleString()}
           </span>
-          <span className="font-mono text-[10px] text-zinc-600">signals captured</span>
+          <span className="font-mono text-[10px] text-zinc-500">signals captured</span>
         </div>
-        {lastSignal && (
-          <p className="font-mono text-[10px] text-zinc-700 mt-0.5">
+        {lastSignal ? (
+          <p className="font-mono text-[10px] text-zinc-600 mt-0.5">
             Last signal: {lastSignal}
           </p>
-        )}
+        ) : count === 0 ? (
+          <p className="font-mono text-[10px] text-zinc-600 mt-0.5">
+            Use any tool to begin
+          </p>
+        ) : null}
       </div>
     </div>
   )
 }
 
 // ── Row-style tool card ──────────────────────────────────────────
-function ToolRow({ tool, accentBorder, accentBg, delay }: {
+function ToolRow({ tool, category, accentBorder, accentBg, delay }: {
   tool: ToolConfig
+  category: string
   accent: string
   accentBorder: string
   accentBg: string
   delay: number
 }) {
+  const tint = CARD_TINTS[category] || { bg: accentBg, border: accentBorder }
+
   return (
     <Link
       to={`/tools/${tool.route}`}
       className="tool-card-animate group relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 hover:-translate-y-0.5"
       style={{
-        background: accentBg,
-        borderColor: accentBorder,
+        background: tint.bg,
+        borderColor: tint.border,
         animationDelay: `${delay}ms`,
       }}
     >
       {/* Hover glow */}
       <div
         className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-        style={{ boxShadow: `0 0 0 1px ${accentBorder}, 0 0 28px ${accentBg}` }}
+        style={{ boxShadow: `0 0 0 1px ${accentBorder}, 0 0 32px ${accentBg}` }}
       />
 
       {/* Icon */}
@@ -169,7 +187,7 @@ function ToolRow({ tool, accentBorder, accentBg, delay }: {
             LIVE
           </span>
         </div>
-        <p className="font-body text-zinc-600 text-xs leading-relaxed mt-1 line-clamp-1">
+        <p className="font-body text-zinc-500 text-xs leading-relaxed mt-1 line-clamp-1">
           {tool.description}
         </p>
       </div>
@@ -292,7 +310,7 @@ export default function Landing() {
           <div
             className="gradient-orb absolute -bottom-16 left-1/2 w-64 h-64 pointer-events-none"
             style={{
-              background: 'radial-gradient(ellipse, rgba(99,102,241,0.09) 0%, transparent 70%)',
+              background: 'radial-gradient(ellipse, rgba(99,102,241,0.12) 0%, transparent 70%)',
               transform: 'translateX(-50%)',
             }}
           />
@@ -419,15 +437,15 @@ export default function Landing() {
 
         {/* ── RIGHT PANEL ── */}
         <main className="flex-1 overflow-y-auto p-6 lg:p-8 relative">
-          {/* Right panel gradient orb — amber tinted, behind finance section */}
+          {/* Amber orb behind finance section */}
           <div
-            className="absolute top-0 right-0 w-80 h-80 pointer-events-none"
-            style={{ background: 'radial-gradient(ellipse at top right, rgba(245,158,11,0.04) 0%, transparent 70%)' }}
+            className="absolute top-0 right-0 w-96 h-96 pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse at top right, rgba(245,158,11,0.06) 0%, transparent 65%)' }}
           />
-          {/* Second orb — emerald, behind career section */}
+          {/* Emerald orb behind career section */}
           <div
-            className="absolute bottom-0 left-0 w-72 h-72 pointer-events-none"
-            style={{ background: 'radial-gradient(ellipse at bottom left, rgba(16,185,129,0.03) 0%, transparent 70%)' }}
+            className="absolute bottom-0 left-0 w-80 h-80 pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse at bottom left, rgba(16,185,129,0.05) 0%, transparent 65%)' }}
           />
 
           <div className="max-w-2xl relative z-10">
@@ -440,7 +458,6 @@ export default function Landing() {
 
                 return (
                   <section key={cat}>
-                    {/* Category header */}
                     <div
                       className="hero-animate flex items-center gap-2.5 mb-3"
                       style={{ animationDelay: `${categoryDelay}ms` }}
@@ -467,7 +484,6 @@ export default function Landing() {
                       </span>
                     </div>
 
-                    {/* Tool rows */}
                     <div className="flex flex-col gap-2.5">
                       {tools.map((tool) => {
                         const delay = 400 + toolIndex * 80
@@ -476,6 +492,7 @@ export default function Landing() {
                           <ToolRow
                             key={tool.id}
                             tool={tool}
+                            category={cat}
                             accent={meta.accent}
                             accentBorder={meta.accentBorder}
                             accentBg={meta.accentBg}
