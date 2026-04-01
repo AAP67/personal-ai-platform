@@ -54,6 +54,16 @@ export const toolRegistry: ToolConfig[] = [
     category: 'Strategy & Operations',
   },
   {
+    id: 'morning-brief',
+    name: 'Morning Brief',
+    description: 'Multi-model AI morning brief — Groq extracts, Gemini scores, Claude synthesizes.',
+    icon: '☀️',
+    route: 'morning-brief',
+    enabled: true,
+    url: 'https://morning-brief-sandy.vercel.app/',
+    category: 'Strategy & Operations',
+  },
+  {
     id: 'ai-consultant',
     name: 'AI Consultant',
     description: 'RAG-powered strategy and operations advisor with document-grounded insights.',

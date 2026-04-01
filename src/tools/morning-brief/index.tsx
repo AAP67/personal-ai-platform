@@ -1,0 +1,21 @@
+import { useState } from 'react'
+
+export default function MorningBrief() {
+  const [loaded, setLoaded] = useState(false)
+  return (
+    <div className="relative w-full h-full">
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-zinc-950">
+          <span className="text-zinc-500 animate-pulse text-sm">Loading Morning Brief…</span>
+        </div>
+      )}
+      <iframe
+        src="https://morning-brief-sandy.vercel.app/"
+        title="Morning Brief"
+        onLoad={() => setLoaded(true)}
+        className="w-full h-full border-0"
+        allow="clipboard-write"
+      />
+    </div>
+  )
+}

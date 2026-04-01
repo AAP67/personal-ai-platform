@@ -14,6 +14,7 @@ const toolComponents: Record<string, LazyExoticComponent<() => ReactNode>> = {
   'deal-sourcing': lazy(() => import('../tools/deal-sourcing/index')),
   'ai-chief-of-staff': lazy(() => import('../tools/ai-chief-of-staff/index')),
   'ai-consultant': lazy(() => import('../tools/ai-consultant/index')),
+  'morning-brief': lazy(() => import('../tools/morning-brief/index')),
   'finance-tutor': lazy(() => import('../tools/finance-tutor/index')),
 }
 
