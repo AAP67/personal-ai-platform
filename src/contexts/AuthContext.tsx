@@ -4,6 +4,7 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  signInAnonymously,
   signOut as firebaseSignOut,
 } from 'firebase/auth'
 import { auth } from '../lib/firebase'
@@ -11,8 +12,10 @@ import { auth } from '../lib/firebase'
 interface AuthContextValue {
   user: User | null
   loading: boolean
+  isGuest: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
+  guestSignIn: () => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -38,12 +41,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await createUserWithEmailAndPassword(auth, email, password)
   }
 
+  async function guestSignIn() {
+    await signInAnonymously(auth)
+  }
+
   async function signOut() {
     await firebaseSignOut(auth)
   }
 
+  const isGuest = user?.isAnonymous ?? false
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, isGuest, signIn, signUp, guestSignIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )

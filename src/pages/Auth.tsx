@@ -22,7 +22,7 @@ export default function Auth() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, guestSignIn } = useAuth()
   const navigate = useNavigate()
 
   async function handleSubmit(e: FormEvent) {
@@ -42,6 +42,19 @@ export default function Auth() {
       } else {
         setError('Something went wrong. Please try again.')
       }
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleGuest() {
+    setError('')
+    setSubmitting(true)
+    try {
+      await guestSignIn()
+      navigate('/dashboard')
+    } catch {
+      setError('Something went wrong. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -128,6 +141,20 @@ export default function Auth() {
                   : mode === 'signin' ? 'Sign In' : 'Create Account'}
               </button>
             </form>
+
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-zinc-800" />
+              <span className="text-xs text-zinc-600">or</span>
+              <div className="flex-1 h-px bg-zinc-800" />
+            </div>
+
+            <button
+              onClick={handleGuest}
+              disabled={submitting}
+              className="w-full border border-zinc-700 hover:border-zinc-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-zinc-300 hover:text-white font-medium py-3 rounded-xl text-sm"
+            >
+              Try as Guest
+            </button>
 
             <p className="text-center text-sm text-zinc-500">
               {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
