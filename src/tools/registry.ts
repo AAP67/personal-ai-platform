@@ -73,6 +73,16 @@ export const toolRegistry: ToolConfig[] = [
     url: 'https://arkanexconsultant.streamlit.app/?embed=true',
     category: 'Strategy & Operations',
   },
+  {
+    id: 'trend-reader',
+    name: 'TrendReader',
+    description: 'Upload Excel/CSV, state your objective, get AI-driven trends, anomalies, charts, and web-enriched market context.',
+    icon: '📊',
+    route: 'trend-reader',
+    enabled: true,
+    url: 'https://trend-reader.vercel.app/',
+    category: 'Strategy & Operations',
+  },
 
   // ── Career & Learning ─────────────────────────────────────────
   {
