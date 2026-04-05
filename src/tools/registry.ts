@@ -6,7 +6,7 @@ export interface ToolConfig {
   route: string
   enabled: boolean
   url?: string
-  category: 'Finance & Investment' | 'Strategy & Operations' | 'Career & Learning'
+  category: 'Finance & Investment' | 'Strategy & Operations' | 'Career & Learning' | 'Developer Tools'
 }
 
 export const toolRegistry: ToolConfig[] = [
@@ -105,6 +105,18 @@ export const toolRegistry: ToolConfig[] = [
     url: 'https://finance-tutor-five.vercel.app/',
     category: 'Career & Learning',
   },
+
+  // ── Developer Tools ───────────────────────────────────────────
+  {
+    id: 'codebase-chat',
+    name: 'Codebase Chat',
+    description: 'Chat with any GitHub repo using AI — OAuth login, codebase ingestion, and Claude-powered analysis.',
+    icon: '⌘',
+    route: 'codebase-chat',
+    enabled: true,
+    url: 'https://codebase-chat-sigma.vercel.app/',
+    category: 'Developer Tools',
+  },
 ]
 
 export function getToolById(id: string): ToolConfig | undefined {
@@ -130,6 +142,7 @@ export const categoryOrder: string[] = [
   'Finance & Investment',
   'Strategy & Operations',
   'Career & Learning',
+  'Developer Tools',
 ]
 
 export const categoryMeta: Record<string, { emoji: string; tagline: string; accent: string; accentBorder: string; accentBg: string }> = {
@@ -153,5 +166,12 @@ export const categoryMeta: Record<string, { emoji: string; tagline: string; acce
     accent: '#10b981',
     accentBorder: 'rgba(16,185,129,0.2)',
     accentBg: 'rgba(16,185,129,0.05)',
+  },
+  'Developer Tools': {
+    emoji: '🛠️',
+    tagline: 'AI-powered tools for developers and builders',
+    accent: '#06b6d4',
+    accentBorder: 'rgba(6,182,212,0.2)',
+    accentBg: 'rgba(6,182,212,0.05)',
   },
 }

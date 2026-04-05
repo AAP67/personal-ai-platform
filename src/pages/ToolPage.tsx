@@ -17,6 +17,7 @@ const toolComponents: Record<string, LazyExoticComponent<() => ReactNode>> = {
   'morning-brief': lazy(() => import('../tools/morning-brief/index')),
   'finance-tutor': lazy(() => import('../tools/finance-tutor/index')),
   'trend-reader': lazy(() => import('../tools/trend-reader/index')),
+  'codebase-chat': lazy(() => import('../tools/codebase-chat/index')),
 }
 
 function StandardShell({ children }: { children: ReactNode }) {
