@@ -1,3 +1,13 @@
+export type DimensionKey = 'risk' | 'strategy' | 'growth' | 'learning' | 'technical'
+
+export interface ToolDimensions {
+  risk: number       // 0-1: how strongly usage signals risk tolerance
+  strategy: number   // 0-1: how strongly usage signals framework/analytical thinking
+  growth: number     // 0-1: how strongly usage signals growth orientation
+  learning: number   // 0-1: how strongly this is a guided/tutored tool
+  technical: number  // 0-1: how strongly usage signals hands-on builder depth
+}
+
 export interface ToolConfig {
   id: string
   name: string
@@ -7,6 +17,7 @@ export interface ToolConfig {
   enabled: boolean
   url?: string
   category: 'Finance & Investment' | 'Strategy & Operations' | 'Career & Learning' | 'Developer Tools'
+  dimensions: ToolDimensions
 }
 
 export const toolRegistry: ToolConfig[] = [
@@ -20,6 +31,7 @@ export const toolRegistry: ToolConfig[] = [
     enabled: true,
     url: 'https://robo-advisor-ai-umber.vercel.app/',
     category: 'Finance & Investment',
+    dimensions: { risk: 0.9, strategy: 0.4, growth: 0.4, learning: 0.2, technical: 0.4 },
   },
   {
     id: 'equity-research',
@@ -30,6 +42,7 @@ export const toolRegistry: ToolConfig[] = [
     enabled: true,
     url: 'https://equity-research-ai-francium77.streamlit.app/?embed=true',
     category: 'Finance & Investment',
+    dimensions: { risk: 0.8, strategy: 0.3, growth: 0.8, learning: 0.3, technical: 0.3 },
   },
   {
     id: 'deal-sourcing',
@@ -40,6 +53,7 @@ export const toolRegistry: ToolConfig[] = [
     enabled: true,
     url: 'https://deal-sourcing-francium77.streamlit.app/?embed=true',
     category: 'Finance & Investment',
+    dimensions: { risk: 0.9, strategy: 0.3, growth: 0.9, learning: 0.2, technical: 0.2 },
   },
 
   // ── Strategy & Operations ─────────────────────────────────────
@@ -52,6 +66,7 @@ export const toolRegistry: ToolConfig[] = [
     enabled: true,
     url: 'https://arkanecos.streamlit.app/?embed=true',
     category: 'Strategy & Operations',
+    dimensions: { risk: 0.1, strategy: 1.0, growth: 0.2, learning: 0.3, technical: 0.1 },
   },
   {
     id: 'morning-brief',
@@ -62,6 +77,7 @@ export const toolRegistry: ToolConfig[] = [
     enabled: true,
     url: 'https://morning-brief-sandy.vercel.app/',
     category: 'Strategy & Operations',
+    dimensions: { risk: 0.1, strategy: 0.7, growth: 0.3, learning: 0.5, technical: 0.2 },
   },
   {
     id: 'ai-consultant',
@@ -72,6 +88,7 @@ export const toolRegistry: ToolConfig[] = [
     enabled: true,
     url: 'https://arkanexconsultant.streamlit.app/?embed=true',
     category: 'Strategy & Operations',
+    dimensions: { risk: 0.2, strategy: 0.9, growth: 0.2, learning: 0.4, technical: 0.2 },
   },
   {
     id: 'trend-reader',
@@ -82,6 +99,7 @@ export const toolRegistry: ToolConfig[] = [
     enabled: true,
     url: 'https://trend-reader.vercel.app/',
     category: 'Strategy & Operations',
+    dimensions: { risk: 0.3, strategy: 0.5, growth: 0.4, learning: 0.3, technical: 0.7 },
   },
 
   // ── Career & Learning ─────────────────────────────────────────
@@ -94,6 +112,7 @@ export const toolRegistry: ToolConfig[] = [
     enabled: true,
     url: 'https://arkanex-ai-interviewer.streamlit.app/?embed=true',
     category: 'Career & Learning',
+    dimensions: { risk: 0.1, strategy: 0.4, growth: 0.2, learning: 0.8, technical: 0.1 },
   },
   {
     id: 'finance-tutor',
@@ -104,6 +123,7 @@ export const toolRegistry: ToolConfig[] = [
     enabled: true,
     url: 'https://finance-tutor-five.vercel.app/',
     category: 'Career & Learning',
+    dimensions: { risk: 0.3, strategy: 0.3, growth: 0.2, learning: 1.0, technical: 0.2 },
   },
 
   // ── Developer Tools ───────────────────────────────────────────
@@ -116,6 +136,7 @@ export const toolRegistry: ToolConfig[] = [
     enabled: true,
     url: 'https://codebase-chat-sigma.vercel.app/',
     category: 'Developer Tools',
+    dimensions: { risk: 0.1, strategy: 0.2, growth: 0.2, learning: 0.4, technical: 1.0 },
   },
 ]
 
@@ -136,6 +157,11 @@ export function toolsByCategory(): Record<string, ToolConfig[]> {
     categories[tool.category].push(tool)
   }
   return categories
+}
+
+// Look up a dimension weight for a given tool. Returns 0 if tool unknown.
+export function getToolDimension(toolId: string, dim: DimensionKey): number {
+  return getToolById(toolId)?.dimensions[dim] ?? 0
 }
 
 export const categoryOrder: string[] = [

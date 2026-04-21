@@ -40,7 +40,7 @@ const MIN_TOOLS = 2
 
 const DIM_META: Record<string, { low: string; high: string; color: string }> = {
   'Risk tolerance':        { low: 'Conservative',  high: 'Aggressive',  color: '#f59e0b' },
-  'Domain focus':          { low: 'Narrow',        high: 'Broad',       color: '#6366f1' },
+  'Domain breadth':        { low: 'Specialist',    high: 'Generalist',  color: '#6366f1' },
   'Decision style':        { low: 'Intuitive',     high: 'Analytical',  color: '#10b981' },
   'Learning approach':     { low: 'Structured',    high: 'Exploratory', color: '#ec4899' },
   'Strategic orientation': { low: 'Efficiency',    high: 'Growth',      color: '#8b5cf6' },
