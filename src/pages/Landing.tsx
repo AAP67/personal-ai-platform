@@ -30,12 +30,15 @@ function MailIcon({ className }: { className?: string }) {
   )
 }
 
-// ── Boosted card tints (registry values are too subtle at 0.05) ──
-const CARD_TINTS: Record<string, { bg: string; border: string }> = {
-  'Finance & Investment':   { bg: 'rgba(245,158,11,0.08)',  border: 'rgba(245,158,11,0.18)' },
-  'Strategy & Operations':  { bg: 'rgba(99,102,241,0.08)',  border: 'rgba(99,102,241,0.18)' },
-  'Career & Learning':      { bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.18)' },
-}
+// ── Demo persona data (static example for landing) ───────────────
+const DEMO_DIMENSIONS = [
+  { name: 'Risk',      score: 82, color: '#f59e0b' },
+  { name: 'Domain',    score: 68, color: '#6366f1' },
+  { name: 'Decision',  score: 76, color: '#10b981' },
+  { name: 'Learning',  score: 54, color: '#ec4899' },
+  { name: 'Strategy',  score: 71, color: '#8b5cf6' },
+  { name: 'Technical', score: 65, color: '#06b6d4' },
+]
 
 // ── Signal Counter ───────────────────────────────────────────────
 function SignalCounter() {
@@ -62,7 +65,6 @@ function SignalCounter() {
             else setLastSignal(`${Math.floor(diff / 86400)}d ago`)
           }
         } else {
-          // Doc doesn't exist yet — show 0
           setCount(0)
         }
       } catch (err) {
@@ -75,7 +77,6 @@ function SignalCounter() {
     fetchStats()
   }, [])
 
-  // Animate count up
   useEffect(() => {
     if (count === null || count === 0) return
     const duration = 1200
@@ -92,9 +93,7 @@ function SignalCounter() {
     requestAnimationFrame(tick)
   }, [count])
 
-  // Don't render until loaded
   if (!loaded) return null
-  // If rules blocked us, show nothing rather than broken UI
   if (failed) return null
 
   return (
@@ -106,7 +105,6 @@ function SignalCounter() {
         animationDelay: '1.3s',
       }}
     >
-      {/* Pulsing dot */}
       <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
         <div
           className="absolute w-5 h-5 rounded-full"
@@ -139,67 +137,155 @@ function SignalCounter() {
   )
 }
 
-// ── Row-style tool card ──────────────────────────────────────────
-function ToolRow({ tool, category, accentBorder, accentBg, delay }: {
-  tool: ToolConfig
-  category: string
-  accent: string
-  accentBorder: string
-  accentBg: string
-  delay: number
-}) {
-  const tint = CARD_TINTS[category] || { bg: accentBg, border: accentBorder }
-
+// ── Demo persona card (marketing preview on landing) ─────────────
+function DemoPersona() {
   return (
-    <Link
-      to={`/tools/${tool.route}`}
-      className="tool-card-animate group relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 hover:-translate-y-0.5"
+    <div
+      className="hero-animate rounded-2xl border p-5 relative overflow-hidden"
       style={{
-        background: tint.bg,
-        borderColor: tint.border,
-        animationDelay: `${delay}ms`,
+        background: 'linear-gradient(135deg, rgba(99,102,241,0.04), rgba(255,255,255,0.01))',
+        borderColor: 'rgba(255,255,255,0.08)',
+        animationDelay: '1.5s',
       }}
     >
-      {/* Hover glow */}
+      {/* Example tag */}
+      <span
+        className="absolute top-3.5 right-3.5 font-mono text-[9px] tracking-[0.15em] uppercase px-2 py-0.5 rounded"
+        style={{
+          color: '#52525b',
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        Example
+      </span>
+
+      <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-indigo-400">
+        Sample persona
+      </span>
+
+      <p className="text-[13px] text-zinc-400 leading-relaxed mt-2.5 mb-5 pr-8">
+        Aggressive allocator with a growth orientation. Spends deep time in equity research and deal sourcing, reaches for frameworks when decisions feel ambiguous.
+      </p>
+
+      {/* Dimension bars */}
+      <div className="flex flex-col gap-2">
+        {DEMO_DIMENSIONS.map((d) => (
+          <div key={d.name} className="flex items-center gap-2.5">
+            <span className="w-[72px] text-[11px] text-zinc-500 font-medium shrink-0">{d.name}</span>
+            <div
+              className="flex-1 h-[5px] rounded-full overflow-hidden"
+              style={{ background: 'rgba(255,255,255,0.05)' }}
+            >
+              <div
+                className="demo-bar h-full rounded-full"
+                style={{
+                  width: `${d.score}%`,
+                  background: d.color,
+                }}
+              />
+            </div>
+            <span className="w-6 text-right font-mono text-[11px] text-zinc-300">{d.score}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* System prompt preview */}
       <div
-        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-        style={{ boxShadow: `0 0 0 1px ${accentBorder}, 0 0 32px ${accentBg}` }}
+        className="mt-4 p-3 rounded-lg font-mono text-[10.5px] leading-relaxed"
+        style={{
+          background: 'rgba(0,0,0,0.25)',
+          border: '1px solid rgba(255,255,255,0.05)',
+          color: '#a1a1aa',
+        }}
+      >
+        <span className="text-indigo-400">"</span>You are assisting someone who approaches decisions analytically, favors growth-stage opportunities, and prefers depth over breadth…<span className="text-indigo-400">"</span>
+      </div>
+
+      <p className="font-mono text-[10px] text-zinc-600 text-center mt-3">
+        ↑ Example output · yours is built from actual usage
+      </p>
+    </div>
+  )
+}
+
+// ── Bento tool card ──────────────────────────────────────────────
+function BentoCard({ category, tools, delay }: {
+  category: string
+  tools: ToolConfig[]
+  delay: number
+}) {
+  const meta = categoryMeta[category]
+
+  return (
+    <div
+      className="hero-animate group/card rounded-2xl border p-4 flex flex-col relative overflow-hidden transition-colors duration-200"
+      style={{
+        background: 'rgba(255,255,255,0.015)',
+        borderColor: 'rgba(255,255,255,0.07)',
+        animationDelay: `${delay}ms`,
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.14)'
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)'
+      }}
+    >
+      {/* Top accent line */}
+      <div
+        className="absolute top-0 left-0 right-0 h-px"
+        style={{ background: meta.accent, opacity: 0.4 }}
       />
 
-      {/* Icon */}
-      <div
-        className="relative w-10 h-10 rounded-lg flex items-center justify-center text-lg shrink-0 transition-transform duration-300 group-hover:scale-110"
-        style={{ background: accentBg, border: `1px solid ${accentBorder}` }}
-      >
-        {tool.icon}
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-1 h-3.5 rounded-sm" style={{ background: meta.accent }} />
+        <span
+          className="font-display text-[11px] font-bold tracking-[0.08em] uppercase"
+          style={{ color: meta.accent }}
+        >
+          {meta.emoji} {category}
+        </span>
+        <span className="ml-auto font-mono text-[10px] text-zinc-700">
+          {tools.length}
+        </span>
       </div>
 
-      {/* Text */}
-      <div className="relative flex-1 min-w-0">
-        <div className="flex items-center gap-2.5">
-          <h3 className="font-display font-semibold text-white text-sm group-hover:text-indigo-300 transition-colors truncate">
-            {tool.name}
-          </h3>
-          <span
-            className="live-badge text-[9px] font-bold px-1.5 py-0.5 rounded font-mono tracking-wider shrink-0"
-            style={{ background: 'rgba(16,185,129,0.1)', color: '#34d399' }}
+      {/* Tool rows */}
+      <div className="flex flex-col">
+        {tools.map((tool) => (
+          <Link
+            key={tool.id}
+            to={`/tools/${tool.route}`}
+            className="group flex items-center gap-3 py-2.5 border-b transition-all duration-200 hover:pl-1"
+            style={{ borderColor: 'rgba(255,255,255,0.04)' }}
           >
-            LIVE
-          </span>
-        </div>
-        <p className="font-body text-zinc-500 text-xs leading-relaxed mt-1 line-clamp-1">
-          {tool.description}
-        </p>
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 transition-transform duration-200 group-hover:scale-110"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.05)',
+              }}
+            >
+              {tool.icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-display text-[13px] font-semibold text-white group-hover:text-indigo-300 transition-colors truncate">
+                {tool.name}
+              </p>
+              <p className="text-[11px] text-zinc-600 mt-0.5 truncate">{tool.description}</p>
+            </div>
+            <svg
+              className="w-3.5 h-3.5 text-zinc-700 group-hover:translate-x-1 transition-all duration-200 shrink-0"
+              fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        ))}
       </div>
-
-      {/* Arrow */}
-      <svg
-        className="relative w-4 h-4 text-zinc-700 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all duration-200 shrink-0"
-        fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-      </svg>
-    </Link>
+    </div>
   )
 }
 
@@ -252,7 +338,7 @@ function Step({ num, title, desc, isLast, stepIndex }: {
 // ── Landing Page ─────────────────────────────────────────────────
 export default function Landing() {
   const grouped = toolsByCategory()
-  let toolIndex = 0
+  const totalTools = Object.values(grouped).reduce((sum, t) => sum + t.length, 0)
 
   return (
     <div className="h-screen flex flex-col font-body overflow-hidden relative grain" style={{ background: '#08080d' }}>
@@ -387,6 +473,14 @@ export default function Landing() {
             <SignalCounter />
           </div>
 
+          {/* Divider */}
+          <div className="w-full h-px my-6" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+          {/* Demo Persona */}
+          <div className="relative z-10">
+            <DemoPersona />
+          </div>
+
           {/* Spacer */}
           <div className="flex-1 min-h-4" />
 
@@ -448,62 +542,20 @@ export default function Landing() {
             style={{ background: 'radial-gradient(ellipse at bottom left, rgba(16,185,129,0.05) 0%, transparent 65%)' }}
           />
 
-          <div className="max-w-2xl relative z-10">
-            <div className="flex flex-col gap-10">
-              {categoryOrder.map((cat) => {
-                const tools = grouped[cat]
-                if (!tools || tools.length === 0) return null
-                const meta = categoryMeta[cat]
-                const categoryDelay = 300 + toolIndex * 80
+          <div className="relative z-10 h-full flex flex-col">
+            <span
+              className="hero-animate font-mono text-[10px] tracking-[0.2em] uppercase text-zinc-600 mb-4"
+              style={{ animationDelay: '0.3s' }}
+            >
+              {totalTools} live tools · {categoryOrder.length} categories
+            </span>
 
-                return (
-                  <section key={cat}>
-                    <div
-                      className="hero-animate flex items-center gap-2.5 mb-3"
-                      style={{ animationDelay: `${categoryDelay}ms` }}
-                    >
-                      <div
-                        className="w-1 h-4 rounded-full"
-                        style={{ background: meta.accent }}
-                      />
-                      <h2
-                        className="font-display text-xs font-semibold uppercase tracking-wider"
-                        style={{ color: meta.accent }}
-                      >
-                        {cat}
-                      </h2>
-                      <div
-                        className="category-header-line flex-1 h-px"
-                        style={{
-                          background: 'rgba(255,255,255,0.04)',
-                          animationDelay: `${categoryDelay + 200}ms`,
-                        }}
-                      />
-                      <span className="font-mono text-[10px] text-zinc-700">
-                        {tools.length}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col gap-2.5">
-                      {tools.map((tool) => {
-                        const delay = 400 + toolIndex * 80
-                        toolIndex++
-                        return (
-                          <ToolRow
-                            key={tool.id}
-                            tool={tool}
-                            category={cat}
-                            accent={meta.accent}
-                            accentBorder={meta.accentBorder}
-                            accentBg={meta.accentBg}
-                            delay={delay}
-                          />
-                        )
-                      })}
-                    </div>
-                  </section>
-                )
-              })}
+            {/* Bento Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-[1.6fr_1fr] gap-3.5 flex-1">
+              <BentoCard category="Finance & Investment"  tools={grouped['Finance & Investment']  || []} delay={400} />
+              <BentoCard category="Career & Learning"     tools={grouped['Career & Learning']     || []} delay={500} />
+              <BentoCard category="Strategy & Operations" tools={grouped['Strategy & Operations'] || []} delay={600} />
+              <BentoCard category="Developer Tools"       tools={grouped['Developer Tools']       || []} delay={700} />
             </div>
           </div>
         </main>
