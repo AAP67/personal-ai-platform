@@ -247,8 +247,8 @@ function BentoCard({ category, tools, delay }: {
         >
           {meta.emoji} {category}
         </span>
-        <span className="ml-auto font-mono text-[10px] text-zinc-700">
-          {tools.length}
+        <span className="ml-auto font-mono text-[10px] text-zinc-500">
+          {tools.length} {tools.length === 1 ? 'tool' : 'tools'}
         </span>
       </div>
 
@@ -274,7 +274,7 @@ function BentoCard({ category, tools, delay }: {
               <p className="font-display text-[13px] font-semibold text-white group-hover:text-indigo-300 transition-colors truncate">
                 {tool.name}
               </p>
-              <p className="text-[11px] text-zinc-600 mt-0.5 truncate">{tool.description}</p>
+              <p className="text-[12px] text-zinc-400 mt-0.5 line-clamp-2 leading-snug">{tool.description}</p>
             </div>
             <svg
               className="w-3.5 h-3.5 text-zinc-700 group-hover:translate-x-1 transition-all duration-200 shrink-0"
@@ -329,7 +329,7 @@ function Step({ num, title, desc, isLast, stepIndex }: {
         style={{ animationDelay: `${circleDelay + 100}ms` }}
       >
         <p className="font-display text-[13px] font-semibold text-white leading-snug">{title}</p>
-        <p className="font-body text-xs text-zinc-500 mt-1 leading-relaxed">{desc}</p>
+        <p className="font-body text-xs text-zinc-400 mt-1 leading-relaxed">{desc}</p>
       </div>
     </div>
   )
@@ -412,7 +412,7 @@ export default function Landing() {
             </h1>
 
             <p
-              className="hero-animate font-body text-sm text-zinc-500 leading-relaxed"
+              className="hero-animate font-body text-sm text-zinc-400 leading-relaxed"
               style={{ animationDelay: '0.3s' }}
             >
               A platform where tool usage — not forms — builds a model of who you are.
@@ -440,7 +440,7 @@ export default function Landing() {
           {/* How it works */}
           <div className="relative z-10 flex flex-col">
             <span
-              className="hero-animate font-mono text-[10px] tracking-[0.2em] uppercase text-zinc-600 mb-5"
+              className="hero-animate font-mono text-[10px] tracking-[0.2em] uppercase text-zinc-500 mb-5"
               style={{ animationDelay: '0.55s' }}
             >
               How it works
@@ -490,40 +490,40 @@ export default function Landing() {
             style={{ animationDelay: '1.7s' }}
           >
             <div className="w-full h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-            <p className="text-[11px] text-zinc-600 pt-1">
+            <p className="text-[11px] text-zinc-500 pt-1">
               Built by{' '}
-              <span className="text-zinc-400 font-medium">Karan Rajpal</span>
+              <span className="text-zinc-300 font-medium">Karan Rajpal</span>
             </p>
             <div className="flex items-center gap-3">
               <a
                 href="https://github.com/AAP67"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-[11px] text-zinc-600 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-white transition-colors"
               >
                 <GitHubIcon className="w-3 h-3" />
                 <span>GitHub</span>
               </a>
-              <div className="w-px h-3 bg-zinc-800" />
+              <div className="w-px h-3 bg-zinc-700" />
               <a
                 href="https://www.linkedin.com/in/krajpal/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-[11px] text-zinc-600 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-white transition-colors"
               >
                 <LinkedInIcon className="w-3 h-3" />
                 <span>LinkedIn</span>
               </a>
-              <div className="w-px h-3 bg-zinc-800" />
+              <div className="w-px h-3 bg-zinc-700" />
               <a
                 href="mailto:krajpal0995@gmail.com"
-                className="flex items-center gap-1.5 text-[11px] text-zinc-600 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-white transition-colors"
               >
                 <MailIcon className="w-3 h-3" />
                 <span>Email</span>
               </a>
             </div>
-            <span className="font-mono text-[10px] text-zinc-800">
+            <span className="font-mono text-[10px] text-zinc-600">
               © 2026 Francium
             </span>
           </div>
@@ -542,16 +542,16 @@ export default function Landing() {
             style={{ background: 'radial-gradient(ellipse at bottom left, rgba(16,185,129,0.05) 0%, transparent 65%)' }}
           />
 
-          <div className="relative z-10 h-full flex flex-col">
+          <div className="relative z-10">
             <span
-              className="hero-animate font-mono text-[10px] tracking-[0.2em] uppercase text-zinc-600 mb-4"
+              className="hero-animate font-mono text-[11px] tracking-[0.2em] uppercase text-zinc-500 mb-4 block"
               style={{ animationDelay: '0.3s' }}
             >
               {totalTools} live tools · {categoryOrder.length} categories
             </span>
 
             {/* Bento Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-[1.6fr_1fr] gap-3.5 flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-[1.6fr_1fr] gap-3.5 auto-rows-min items-start">
               <BentoCard category="Finance & Investment"  tools={grouped['Finance & Investment']  || []} delay={400} />
               <BentoCard category="Career & Learning"     tools={grouped['Career & Learning']     || []} delay={500} />
               <BentoCard category="Strategy & Operations" tools={grouped['Strategy & Operations'] || []} delay={600} />
