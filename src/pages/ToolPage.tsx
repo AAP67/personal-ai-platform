@@ -42,6 +42,16 @@ function IframeShell({ tool, children }: { tool: ToolConfig; children: ReactNode
         </Link>
         <span className="text-zinc-600 text-sm">|</span>
         <span className="text-sm text-zinc-300">{tool.icon} {tool.name}</span>
+        {tool.repoUrl && (
+          <a
+            href={tool.repoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto text-xs font-mono text-zinc-500 hover:text-indigo-400 transition-colors"
+          >
+            View source ↗
+          </a>
+        )}
       </nav>
       <div className="flex-1 min-h-0">{children}</div>
     </div>

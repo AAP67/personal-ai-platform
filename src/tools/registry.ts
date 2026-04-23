@@ -17,6 +17,7 @@ export interface ToolConfig {
   enabled: boolean
   url?: string
   stack?: string
+  repoUrl?: string
   category: 'Finance & Investment' | 'Strategy & Operations' | 'Career & Learning' | 'Developer Tools'
   dimensions: ToolDimensions
 }
@@ -32,6 +33,7 @@ export const toolRegistry: ToolConfig[] = [
     enabled: true,
     url: 'https://robo-advisor-ai-umber.vercel.app/',
     stack: 'LangGraph · Claude · Black-Litterman',
+    repoUrl: 'https://github.com/AAP67/robo-advisor-ai',
     category: 'Finance & Investment',
     dimensions: { risk: 0.9, strategy: 0.4, growth: 0.4, learning: 0.2, technical: 0.4 },
   },
@@ -43,6 +45,7 @@ export const toolRegistry: ToolConfig[] = [
     route: 'equity-research',
     enabled: true,
     url: 'https://equity-research-ai-francium77.streamlit.app/?embed=true',
+    repoUrl: 'https://github.com/AAP67/equity-research-ai',
     category: 'Finance & Investment',
     dimensions: { risk: 0.8, strategy: 0.3, growth: 0.8, learning: 0.3, technical: 0.3 },
   },
@@ -54,6 +57,7 @@ export const toolRegistry: ToolConfig[] = [
     route: 'deal-sourcing',
     enabled: true,
     url: 'https://deal-sourcing-francium77.streamlit.app/?embed=true',
+    repoUrl: 'https://github.com/AAP67/deal-sourcing',
     category: 'Finance & Investment',
     dimensions: { risk: 0.9, strategy: 0.3, growth: 0.9, learning: 0.2, technical: 0.2 },
   },
@@ -67,6 +71,7 @@ export const toolRegistry: ToolConfig[] = [
     route: 'ai-chief-of-staff',
     enabled: true,
     url: 'https://arkanecos.streamlit.app/?embed=true',
+    repoUrl: 'https://github.com/AAP67/ai-chief-of-staff',
     category: 'Strategy & Operations',
     dimensions: { risk: 0.1, strategy: 1.0, growth: 0.2, learning: 0.3, technical: 0.1 },
   },
@@ -78,6 +83,7 @@ export const toolRegistry: ToolConfig[] = [
     route: 'morning-brief',
     enabled: true,
     url: 'https://morning-brief-sandy.vercel.app/',
+    repoUrl: 'https://github.com/AAP67/morning-brief',
     category: 'Strategy & Operations',
     dimensions: { risk: 0.1, strategy: 0.7, growth: 0.3, learning: 0.5, technical: 0.2 },
   },
@@ -90,6 +96,7 @@ export const toolRegistry: ToolConfig[] = [
     enabled: true,
     url: 'https://arkanexconsultant.streamlit.app/?embed=true',
     stack: 'RAG · document-grounded',
+    repoUrl: 'https://github.com/AAP67/ai-consultant',
     category: 'Strategy & Operations',
     dimensions: { risk: 0.2, strategy: 0.9, growth: 0.2, learning: 0.4, technical: 0.2 },
   },
@@ -101,6 +108,7 @@ export const toolRegistry: ToolConfig[] = [
     route: 'trend-reader',
     enabled: true,
     url: 'https://trend-reader.vercel.app/',
+    repoUrl: 'https://github.com/AAP67/trend-reader',
     category: 'Strategy & Operations',
     dimensions: { risk: 0.3, strategy: 0.5, growth: 0.4, learning: 0.3, technical: 0.7 },
   },
@@ -114,6 +122,7 @@ export const toolRegistry: ToolConfig[] = [
     route: 'arkanex',
     enabled: true,
     url: 'https://arkanex-ai-interviewer.streamlit.app/?embed=true',
+    repoUrl: 'https://github.com/AAP67/arkanex',
     category: 'Career & Learning',
     dimensions: { risk: 0.1, strategy: 0.4, growth: 0.2, learning: 0.8, technical: 0.1 },
   },
@@ -125,6 +134,7 @@ export const toolRegistry: ToolConfig[] = [
     route: 'finance-tutor',
     enabled: true,
     url: 'https://finance-tutor-five.vercel.app/',
+    repoUrl: 'https://github.com/AAP67/finance-tutor',
     category: 'Career & Learning',
     dimensions: { risk: 0.3, strategy: 0.3, growth: 0.2, learning: 1.0, technical: 0.2 },
   },
@@ -138,6 +148,7 @@ export const toolRegistry: ToolConfig[] = [
     route: 'codebase-chat',
     enabled: true,
     url: 'https://codebase-chat-sigma.vercel.app/',
+    repoUrl: 'https://github.com/AAP67/codebase-chat',
     category: 'Developer Tools',
     dimensions: { risk: 0.1, strategy: 0.2, growth: 0.2, learning: 0.4, technical: 1.0 },
   },
