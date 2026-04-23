@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
-import { ToolConfig, toolsByCategory, categoryOrder, categoryMeta } from '../tools/registry'
+import { ToolConfig, toolsByCategory, categoryOrder, categoryMeta, enabledTools } from '../tools/registry'
 import { useAuth } from '../contexts/AuthContext'
 import { useLogInteraction } from '../hooks/useLogInteraction'
 
@@ -76,9 +76,41 @@ export default function Dashboard() {
       </nav>
 
       <main className="max-w-5xl mx-auto px-6 py-14">
-        <header className="mb-12">
-          <h1 className="text-3xl font-bold">Your Tools</h1>
-          <p className="text-zinc-500 mt-2">7 AI tools across finance, strategy, and career.</p>
+        <header className="mb-12 flex flex-col gap-4">
+          <span className="font-mono text-[11px] tracking-[0.2em] uppercase text-indigo-400">
+            Karan Rajpal · Finance × AI × Operations
+          </span>
+          <h1 className="font-display text-4xl font-extrabold tracking-tight text-white">
+            A working portfolio, not a résumé.
+          </h1>
+          <p className="text-zinc-400 text-base leading-relaxed max-w-2xl">
+            {enabledTools().length} live AI tools I built end-to-end — spanning portfolio optimization,
+            equity research, strategic analysis, and AI-powered tutoring. Every click is a signal
+            that shapes the persona on your Profile page.
+          </p>
+          <div className="flex items-center gap-3 pt-1 text-xs text-zinc-500">
+            <span className="font-mono">{enabledTools().length} tools</span>
+            <span className="text-zinc-700">·</span>
+            <span className="font-mono">{categoryOrder.length} categories</span>
+            <span className="text-zinc-700">·</span>
+            <a
+              href="https://github.com/AAP67"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-zinc-400 hover:text-indigo-400 transition-colors"
+            >
+              github ↗
+            </a>
+            <span className="text-zinc-700">·</span>
+            <a
+              href="https://www.linkedin.com/in/krajpal/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-zinc-400 hover:text-indigo-400 transition-colors"
+            >
+              linkedin ↗
+            </a>
+          </div>
         </header>
 
         <div className="flex flex-col gap-14">
