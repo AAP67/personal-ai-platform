@@ -471,6 +471,39 @@ export default function Landing() {
           {/* Divider */}
           <div className="w-full h-px my-6" style={{ background: 'rgba(255,255,255,0.06)' }} />
 
+          {/* About the Builder */}
+          <div
+            className="hero-animate relative z-10 flex flex-col gap-3"
+            style={{ animationDelay: '1.6s' }}
+          >
+            <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-zinc-500">
+              About the builder
+            </span>
+            <div className="flex items-start gap-3">
+              <img
+                src="/karan.jpeg"
+                alt="Karan Rajpal"
+                className="w-14 h-14 rounded-full object-cover border shrink-0"
+                style={{ borderColor: 'rgba(99,102,241,0.3)' }}
+              />
+              <div className="flex flex-col gap-1 min-w-0">
+                <p className="font-display text-sm font-bold text-white leading-tight">
+                  Karan Rajpal
+                </p>
+                <p className="text-[11px] text-zinc-400 leading-snug">
+                  UC Berkeley Haas MBA '25 · ex-Borderless Capital, UBS, OSTC
+                </p>
+              </div>
+            </div>
+            <p className="text-[12px] text-zinc-500 leading-relaxed">
+              Currently at Handshake AI — building model evaluation pipelines with OpenAI and Perplexity.
+              Francium is my sandbox for AI tools in finance and ops.
+            </p>
+          </div>
+
+          {/* Divider */}
+          <div className="w-full h-px my-6" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
           {/* Signal Counter */}
           <div className="relative z-10">
             <SignalCounter />
