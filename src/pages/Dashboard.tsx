@@ -16,6 +16,9 @@ function ToolCard({ tool }: { tool: ToolConfig }) {
           {tool.name}
         </h3>
         <p className="text-zinc-500 text-sm mt-1.5 leading-relaxed">{tool.description}</p>
+        {tool.stack && (
+          <p className="font-mono text-[10px] text-zinc-600 mt-2 tracking-wide">{tool.stack}</p>
+        )}
       </div>
       <span className="text-xs text-zinc-600 mt-auto group-hover:text-indigo-400 transition-colors flex items-center gap-1">
         Open

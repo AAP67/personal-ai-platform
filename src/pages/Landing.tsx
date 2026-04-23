@@ -275,6 +275,9 @@ function BentoCard({ category, tools, delay }: {
                 {tool.name}
               </p>
               <p className="text-[12px] text-zinc-400 mt-0.5 line-clamp-2 leading-snug">{tool.description}</p>
+              {tool.stack && (
+                <p className="font-mono text-[10px] text-zinc-500 mt-1 truncate">{tool.stack}</p>
+              )}
             </div>
             <svg
               className="w-3.5 h-3.5 text-zinc-700 group-hover:translate-x-1 transition-all duration-200 shrink-0"

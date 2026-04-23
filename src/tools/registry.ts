@@ -16,6 +16,7 @@ export interface ToolConfig {
   route: string
   enabled: boolean
   url?: string
+  stack?: string
   category: 'Finance & Investment' | 'Strategy & Operations' | 'Career & Learning' | 'Developer Tools'
   dimensions: ToolDimensions
 }
@@ -30,6 +31,7 @@ export const toolRegistry: ToolConfig[] = [
     route: 'robo-advisor',
     enabled: true,
     url: 'https://robo-advisor-ai-umber.vercel.app/',
+    stack: 'LangGraph · Claude · Black-Litterman',
     category: 'Finance & Investment',
     dimensions: { risk: 0.9, strategy: 0.4, growth: 0.4, learning: 0.2, technical: 0.4 },
   },
@@ -87,6 +89,7 @@ export const toolRegistry: ToolConfig[] = [
     route: 'ai-consultant',
     enabled: true,
     url: 'https://arkanexconsultant.streamlit.app/?embed=true',
+    stack: 'RAG · document-grounded',
     category: 'Strategy & Operations',
     dimensions: { risk: 0.2, strategy: 0.9, growth: 0.2, learning: 0.4, technical: 0.2 },
   },
